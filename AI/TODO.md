@@ -15,7 +15,7 @@ HANDOFF.md).
 - [x] Dashboard shell (static layout, no real data wired yet)
 - [ ] App lock: OS biometric/PIN default, custom PIN option, off option
       with one-time warning
-- [ ] Settings screen scaffold
+- [x] Settings screen scaffold
 - [ ] Data export (JSON, non-Vault modules) — Settings screen action
 - [ ] Remote status check (maintenance/kill-switch) with offline-safe
       caching behavior

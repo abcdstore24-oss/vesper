@@ -162,3 +162,7 @@ anywhere in CLAUDE.md/DATABASE.md, so this is a convention, not a
 locked fact. Time-of-day greeting (morning/afternoon/evening) is
 likewise an interpretation of CLAUDE.md's "e.g. Good evening" example,
 not a locked value. Confirmed working on-device.
+
+### 2026-09-22 — Settings entry point & layout
+
+Settings isn't a bottom-bar tab or a More-list item — it's reached via a gear icon in Dashboard's AppBar (plain Navigator.push, no router package), since it's a cross-cutting screen rather than a content module. Theme mode uses a SegmentedButton<ThemeMode> (Light/Dark/System) over a radio list or dropdown — shows all three states and lets you change in one tap, in a single compact row. App Lock / Data export rows use a hybrid "coming soon" treatment: a persistent "Soon" badge for an at-a-glance cue, plus a SnackBar on tap for interactive feedback — not a fully disabled row. App version is hardcoded "1.0.0" rather than reading it dynamically, since package_info_plus isn't in the locked stack and wasn't worth adding for one string — worth revisiting once a real release/build-number scheme exists. See CLAUDE.md Section 4 (App Lock), Section 6 (Data export).

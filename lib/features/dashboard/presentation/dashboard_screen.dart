@@ -5,6 +5,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import '../../../core/db/app_database.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/dashboard_card.dart';
+import '../../settings/presentation/settings_screen.dart';
 import '../data/user_profile_dao.dart';
 
 /// Dashboard tab — CLAUDE.md Section 1, item 10.
@@ -21,7 +22,18 @@ class DashboardScreen extends ConsumerWidget {
     final profileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: Icon(PhosphorIconsRegular.gearSix),
+            tooltip: 'Settings',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
