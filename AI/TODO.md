@@ -9,7 +9,7 @@ HANDOFF.md).
 - [x] Design tokens: color palette (light/dark) + typography set up as
       code (per CLAUDE.md Section 3)
 - [x] ThemeData (light/dark) + theme toggle, persisted
-- [ ] Local encrypted database connection (Drift + SQLCipher) wired up,
+- [x] Local encrypted database connection (Drift + SQLCipher) wired up,
       with `user_profile` and `remote_status_cache` tables
 - [ ] Navigation shell (bottom nav / drawer — module entry points)
 - [ ] Dashboard shell (static layout, no real data wired yet)

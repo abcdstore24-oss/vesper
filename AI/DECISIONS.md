@@ -122,3 +122,18 @@ is built; unlocked TextTheme roles (display/headline/title-Medium&Small,
 bodySmall, labelMedium/Small) default to GoogleFonts.karlaTextTheme()'s
 own sizing. None of this changes the locked hex values, fonts, or radii
 — it only fills Material's extra required fields. Approved as-is.
+
+### 2026-09-22 — ID generation without the `uuid` package
+`user_profile`/`remote_status_cache` use a custom `generateId()` in
+app_database.dart (dart:math `Random.secure()`, formatted as a UUID-v4
+*shaped* string) instead of the `uuid` package, to avoid adding a
+dependency for something already solved. Not RFC-4122-certified, but
+cryptographically random and correctly shaped. This is the standing
+approach for ID generation project-wide — don't introduce the `uuid`
+package later without a real reason to revisit this.
+
+### 2026-09-22 — remote_status_cache field set confirmed
+DATABASE.md's literal field list for `remote_status_cache` (no
+user_id/created_at/updated_at) is correct as written — this table is
+explicitly device-scoped, not user-scoped, per DATABASE.md's own
+description. Confirmed, not a gap.
