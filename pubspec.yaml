@@ -36,7 +36,7 @@ dependencies:
 
   # Theme / design system
   google_fonts: ^6.2.1
-  phosphor_flutter: ^2.1.0
+  phosphoricons_flutter: ^1.0.0 
 
   # Local encrypted database
   drift: ^2.20.3

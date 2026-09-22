@@ -11,7 +11,7 @@ HANDOFF.md).
 - [x] ThemeData (light/dark) + theme toggle, persisted
 - [x] Local encrypted database connection (Drift + SQLCipher) wired up,
       with `user_profile` and `remote_status_cache` tables
-- [ ] Navigation shell (bottom nav / drawer — module entry points)
+- [x] Navigation shell (bottom nav / drawer — module entry points)
 - [ ] Dashboard shell (static layout, no real data wired yet)
 - [ ] App lock: OS biometric/PIN default, custom PIN option, off option
       with one-time warning

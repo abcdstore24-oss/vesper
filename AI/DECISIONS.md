@@ -137,3 +137,15 @@ DATABASE.md's literal field list for `remote_status_cache` (no
 user_id/created_at/updated_at) is correct as written — this table is
 explicitly device-scoped, not user-scoped, per DATABASE.md's own
 description. Confirmed, not a gap.
+
+### 2026-09-22 — Icon package swapped: phosphor_flutter → phosphoricons_flutter
+The original phosphor_flutter package extends IconData, which Flutter's
+SDK now marks as a final class (an upstream Flutter breaking change),
+making phosphor_flutter uninstallable on current Flutter regardless of
+version. Switched to phosphoricons_flutter (community-maintained,
+rebuilt without extending IconData) as a drop-in replacement carrying
+the same Phosphor icon set — the locked design decision (CLAUDE.md
+Section 3: "one consistent icon set app-wide") is unchanged; only the
+underlying package implementing it changed. Usage pattern:
+PhosphorIconsRegular.x / PhosphorIconsFill.x, replacing the old
+PhosphorIcons.x(PhosphorIconsStyle.x) calls.
