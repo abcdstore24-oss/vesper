@@ -15,3 +15,15 @@ When adding an entry, use this format:
 - Purpose: one-line description
 - Notes: anything a future session should know before modifying it
 ```
+
+### DashboardCard
+- File: lib/shared/widgets/dashboard_card.dart
+- Used by: dashboard_screen.dart (all 7 Dashboard cards)
+- Purpose: icon + title + body-slot card shell for Dashboard sections;
+  DashboardCard.emptyState(icon, title, message) covers the common
+  icon+title+one-line-copy case
+- Notes: styling comes entirely from ThemeData.cardTheme — don't
+  re-specify AppRadius.card or surface colors when using/extending this.
+  Note: the greeting card's *populated* state also currently reuses
+  .emptyState for layout convenience even though it shows real data —
+  harmless, but don't be confused by the name if reading that call site.

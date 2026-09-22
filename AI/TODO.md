@@ -12,7 +12,7 @@ HANDOFF.md).
 - [x] Local encrypted database connection (Drift + SQLCipher) wired up,
       with `user_profile` and `remote_status_cache` tables
 - [x] Navigation shell (bottom nav / drawer — module entry points)
-- [ ] Dashboard shell (static layout, no real data wired yet)
+- [x] Dashboard shell (static layout, no real data wired yet)
 - [ ] App lock: OS biometric/PIN default, custom PIN option, off option
       with one-time warning
 - [ ] Settings screen scaffold

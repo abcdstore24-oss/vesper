@@ -149,3 +149,16 @@ Section 3: "one consistent icon set app-wide") is unchanged; only the
 underlying package implementing it changed. Usage pattern:
 PhosphorIconsRegular.x / PhosphorIconsFill.x, replacing the old
 PhosphorIcons.x(PhosphorIconsStyle.x) calls.
+
+### 2026-09-22 — Dashboard greeting date math (approved)
+Age = today.year − birthdate.year, minus 1 if this year's birthday
+hasn't occurred yet. Days-to-next-birthday = difference to the next
+occurrence of birthdate's month/day (this year if not yet passed, else
+next year), both dates normalized to midnight first; 0 days shows a
+"today's your birthday" message instead of "0 days." Feb 29 birthdates
+are observed on March 1 in non-leap years, via Dart's own DateTime
+day-overflow normalization rather than a special case — not specified
+anywhere in CLAUDE.md/DATABASE.md, so this is a convention, not a
+locked fact. Time-of-day greeting (morning/afternoon/evening) is
+likewise an interpretation of CLAUDE.md's "e.g. Good evening" example,
+not a locked value. Confirmed working on-device.
