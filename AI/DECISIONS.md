@@ -108,3 +108,17 @@ to be useful, iOS needs a paid developer account). See CLAUDE.md Section
 
 ### 2026-09-22 — Typography numeric scale (approved)
 CLAUDE.md Section 3 locks the font families (Fraunces/Karla) and their usage but does not specify sizes, weights, or letter-spacing. Implemented a first type scale in app_typography.dart: displayLarge (Fraunces 57/600/-0.25), headlineLarge (Fraunces 32/600/0), titleMedium (Fraunces 20/500/0.15), bodyLarge (Karla 16/400/0.15), bodyMedium (Karla 14/400/0.25), labelLarge (Karla 14/600/0.1). Unlike the rest of Section 3, this scale is not yet locked — it's a working default that can be revised freely rather than superseded. Owner should review and either approve as-is or adjust.
+
+### 2026-09-22 — ThemeData derived tokens (approved)
+CLAUDE.md Section 3 locks colors/typography/shape but doesn't cover
+Material's additional required roles. Resolved in app_theme.dart:
+on-accent/on-error text color derived from the `background` token (not
+a new hex); `secondary` mapped to `accent` (Vesper has only "one
+accent"); disabled-button state derived as accent at 38% opacity; card
+elevation approximated via `shadowColor`+`elevation` since CLAUDE.md's
+exact blur-24/spread-0 shadow isn't expressible through ThemeData alone
+and will need a widget-level BoxShadow later, when a real Card component
+is built; unlocked TextTheme roles (display/headline/title-Medium&Small,
+bodySmall, labelMedium/Small) default to GoogleFonts.karlaTextTheme()'s
+own sizing. None of this changes the locked hex values, fonts, or radii
+— it only fills Material's extra required fields. Approved as-is.
