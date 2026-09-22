@@ -105,3 +105,6 @@ sensitive; lifestyle modules after the core habit-forming loop exists;
 AI and iOS last since both are optional/gated (AI needs real usage data
 to be useful, iOS needs a paid developer account). See CLAUDE.md Section
 7 / TODO.md.
+
+### 2026-09-22 — Typography numeric scale (approved)
+CLAUDE.md Section 3 locks the font families (Fraunces/Karla) and their usage but does not specify sizes, weights, or letter-spacing. Implemented a first type scale in app_typography.dart: displayLarge (Fraunces 57/600/-0.25), headlineLarge (Fraunces 32/600/0), titleMedium (Fraunces 20/500/0.15), bodyLarge (Karla 16/400/0.15), bodyMedium (Karla 14/400/0.25), labelLarge (Karla 14/600/0.1). Unlike the rest of Section 3, this scale is not yet locked — it's a working default that can be revised freely rather than superseded. Owner should review and either approve as-is or adjust.

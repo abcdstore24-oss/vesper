@@ -6,7 +6,7 @@ tell you what to check off rather than editing this file directly (see
 HANDOFF.md).
 
 ## Phase 1 — Foundation
-- [ ] Design tokens: color palette (light/dark) + typography set up as
+- [x] Design tokens: color palette (light/dark) + typography set up as
       code (per CLAUDE.md Section 3)
 - [ ] ThemeData (light/dark) + theme toggle, persisted
 - [ ] Local encrypted database connection (Drift + SQLCipher) wired up,
