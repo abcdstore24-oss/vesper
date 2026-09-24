@@ -166,3 +166,31 @@ not a locked value. Confirmed working on-device.
 ### 2026-09-22 — Settings entry point & layout
 
 Settings isn't a bottom-bar tab or a More-list item — it's reached via a gear icon in Dashboard's AppBar (plain Navigator.push, no router package), since it's a cross-cutting screen rather than a content module. Theme mode uses a SegmentedButton<ThemeMode> (Light/Dark/System) over a radio list or dropdown — shows all three states and lets you change in one tap, in a single compact row. App Lock / Data export rows use a hybrid "coming soon" treatment: a persistent "Soon" badge for an at-a-glance cue, plus a SnackBar on tap for interactive feedback — not a fully disabled row. App version is hardcoded "1.0.0" rather than reading it dynamically, since package_info_plus isn't in the locked stack and wasn't worth adding for one string — worth revisiting once a real release/build-number scheme exists. See CLAUDE.md Section 4 (App Lock), Section 6 (Data export).
+
+### 2026-09-22 — App Lock implementation
+Three modes (OS biometric/PIN via `local_auth`, custom 6-digit PIN, off)
+per CLAUDE.md Section 4. PIN hashed with SHA-256 + random salt (`crypto`
+package, added as a direct dependency) via `PinStorage`, both values in
+`flutter_secure_storage`, never the raw PIN. Lock state split into two
+providers: `appLockModeProvider` (persisted, defaults to `os` per
+Section 4's "default/recommended") and `isUnlockedProvider`
+(session-only, never persisted — always `false` on a real cold start).
+Lock overlay intercepts both cold start and every background→foreground
+resume, guarding against re-locking during the OS-auth prompt's own
+pause/resume cycle via `authPromptActiveProvider`. Turning App Lock off
+shows a one-time confirmation dialog naming exactly what's exposed.
+Confirmed working on-device. See CLAUDE.md Section 1, Section 4.
+
+### 2026-09-22 — Change PIN / Forgot PIN deferred
+The nested-Navigator approach used to let LockScreen push PinSetupScreen
+(needed because LockScreen sits outside the main Navigator, as a Stack
+sibling in main.dart's overlay) caused intermittent black-screen/frozen
+UI on-device — likely a GlobalKey/Navigator identity conflict during
+lock/unlock transitions, which appears to corrupt the app's Navigator
+state broadly (unrelated screens went black afterward too). Reverted to
+the last known-good state: base App Lock (OS/PIN/off + the one-time
+off-warning) is intact and tested. Change PIN and Forgot PIN are
+deferred until a simpler, non-nested-Navigator design is built —
+proposal: swap screens via plain in-place state (an enum + setState
+inside the lock overlay itself), not Navigator.push, avoiding a second
+Navigator entirely.

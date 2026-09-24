@@ -13,7 +13,7 @@ HANDOFF.md).
       with `user_profile` and `remote_status_cache` tables
 - [x] Navigation shell (bottom nav / drawer — module entry points)
 - [x] Dashboard shell (static layout, no real data wired yet)
-- [ ] App lock: OS biometric/PIN default, custom PIN option, off option
+- [x] App lock: OS biometric/PIN default, custom PIN option, off option
       with one-time warning
 - [x] Settings screen scaffold
 - [ ] Data export (JSON, non-Vault modules) — Settings screen action

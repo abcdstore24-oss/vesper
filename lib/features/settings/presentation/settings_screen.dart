@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../../core/services/app_lock_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/theme_mode_provider.dart';
+import '../../lock/presentation/pin_setup_screen.dart';
 
 /// Settings screen scaffold (Phase 1, Task 6).
 ///
@@ -18,6 +20,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeProvider);
+    final appLockMode = ref.watch(appLockModeProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -66,8 +69,13 @@ class SettingsScreen extends ConsumerWidget {
           _SettingsRow(
             icon: PhosphorIconsRegular.lockKey,
             title: 'App Lock',
-            trailing: const _ComingSoonBadge(),
-            onTap: () => _showComingSoon(context, 'App Lock'),
+            trailing: Text(
+              _appLockModeLabel(appLockMode),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            onTap: () => _showAppLockPicker(context, ref, appLockMode),
           ),
           const SizedBox(height: AppSpacing.xl),
 
@@ -115,6 +123,97 @@ class SettingsScreen extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$feature — coming soon.')));
+  }
+
+  String _appLockModeLabel(AppLockMode mode) {
+    switch (mode) {
+      case AppLockMode.os:
+        return 'Device lock';
+      case AppLockMode.pin:
+        return 'Custom PIN';
+      case AppLockMode.off:
+        return 'Off';
+    }
+  }
+
+  void _showAppLockPicker(
+    BuildContext context,
+    WidgetRef ref,
+    AppLockMode currentMode,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<AppLockMode>(
+                title: const Text('Device lock (biometric/PIN)'),
+                subtitle: const Text('Recommended'),
+                value: AppLockMode.os,
+                groupValue: currentMode,
+                onChanged: (_) async {
+                  Navigator.of(sheetContext).pop();
+                  await ref
+                      .read(appLockModeProvider.notifier)
+                      .setMode(AppLockMode.os);
+                },
+              ),
+              RadioListTile<AppLockMode>(
+                title: const Text('Custom PIN'),
+                value: AppLockMode.pin,
+                groupValue: currentMode,
+                onChanged: (_) async {
+                  Navigator.of(sheetContext).pop();
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PinSetupScreen()),
+                  );
+                },
+              ),
+              RadioListTile<AppLockMode>(
+                title: const Text('Off'),
+                value: AppLockMode.off,
+                groupValue: currentMode,
+                onChanged: (_) {
+                  Navigator.of(sheetContext).pop();
+                  _confirmTurnOff(context, ref);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmTurnOff(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Turn off App Lock?'),
+        content: const Text(
+          'Anyone with access to your device will be able to open Vesper '
+          'without a PIN or biometric check, including Finance and Vault. '
+          'You can turn it back on anytime in Settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await ref
+                  .read(appLockModeProvider.notifier)
+                  .setMode(AppLockMode.off);
+            },
+            child: const Text('Turn Off'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
