@@ -92,6 +92,7 @@ Checked via a public (no-login) Supabase read:
 | Push notifications | Firebase Cloud Messaging |
 | AI (Phase 6) | Supabase Edge Function → Claude/OpenAI API (server-side key only, never on-device) |
 | Icons | Phosphor Icons (`phosphoricons_flutter`) — the one icon set, app-wide |
+| File sharing | share_plus (Data export "share" action) |
 
 Cost target: $0/month at personal scale (free tiers). One-time $25
 Google Play fee at Android launch; $99/year Apple Developer fee only if

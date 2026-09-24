@@ -194,3 +194,57 @@ deferred until a simpler, non-nested-Navigator design is built —
 proposal: swap screens via plain in-place state (an enum + setState
 inside the lock overlay itself), not Navigator.push, avoiding a second
 Navigator entirely.
+
+### 2026-09-24 — Data export: Save to Downloads (Phase 1, Task 8b)
+Added `DataExportService.saveToDownloads()`, which reuses `exportToFile()`
+and hands the result to `file_saver`'s `saveAs()` (Android: Storage
+Access Framework "Save As" dialog). Settings' "Export my data" row now
+opens a bottom sheet (same interaction pattern as the App Lock picker)
+offering **Share...** (existing, unchanged) or **Save to Downloads**
+(Android only — iOS already has an equivalent via the Share sheet's
+"Save to Files").
+
+**Why `file_saver`/`saveAs()` and not a MediaStore-writing plugin:** the
+popular general-purpose package (`file_saver`, 483 likes, verified
+publisher) does *not* write to public Downloads via its plain
+`saveFile()` on Android — its own docs say that goes to app-private
+`Android/data/<package>/files/`, the same category of problem this task
+exists to fix. Packages that specifically claim silent MediaStore writes
+to public Downloads (`better_download_saver`, `public_file_saver`,
+`android_file_storage`) all had ~0 downloads/likes and unverified
+publishers at the time of checking — too unproven to add to an app that
+also handles passwords and financial data (Vault, Finance). `file_saver`'s
+`saveAs()` sidesteps both problems: it's the well-audited package, and it
+uses Android's own SAF "Save As" system dialog to place the file — a
+direct write to wherever the user picks, with the added benefit that the
+user sees and confirms exactly where their data is going. Standing
+guidance for future Vesper dependency choices: a package being
+well-known/liked and a package actually solving the stated problem are
+separate questions — check both before adding anything, especially for
+storage/security-adjacent features. Confirmed working on-device: file
+appears in the phone's Downloads folder via Save to Downloads, and Share
+still opens the OS share sheet correctly.
+
+### 2026-09-24 — Known issue: KGP/Built-in Kotlin warning (share_plus, file_saver)
+`flutter run` emits a `WARNING: ... plugins that apply Kotlin Gradle
+Plugin (KGP): file_saver, share_plus`. This is a known, ecosystem-wide
+Flutter deprecation (many popular plugins affected, actively being
+migrated upstream) ahead of AGP 9's removal of KGP support — not caused
+by anything in Vesper's own code, and not currently build-blocking.
+`share_plus` has a fix in `^12.0.0`, but it's a breaking change requiring
+AGP ≥8.12.1 / Gradle ≥8.13 / Kotlin ≥2.2.0 — deferred until those
+project-level versions are checked. `file_saver` has no fixed release yet
+as of this date. Revisit when either package ships a fix, or when
+Flutter's compatibility shim is scheduled for removal.
+
+### 2026-09-24 — Known issue: intermittent Kotlin daemon build failure (Windows)
+One `flutter run` on Windows showed mid-build Kotlin daemon errors
+(`Unresolved reference`, `NoSuchFileException`, "Storage already
+registered") that looked severe but were a transient, known class of
+Windows Kotlin-incremental-compile-cache corruption — Gradle discarded
+the broken state and retried, producing a successful `assembleDebug` and
+a working installed app in the same run. Not a real code defect in
+Vesper, share_plus, or file_saver. If a future build genuinely fails
+(no successful APK, no install) with similar errors, standard fix: `cd
+android && .\gradlew --stop`, then `flutter clean`, then `flutter run`
+again, to clear stale daemon/incremental state.

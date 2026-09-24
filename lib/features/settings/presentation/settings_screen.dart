@@ -1,18 +1,23 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../../core/db/db_provider.dart';
 import '../../../core/services/app_lock_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../lock/presentation/pin_setup_screen.dart';
-
-/// Settings screen scaffold (Phase 1, Task 6).
+import '../data/data_export_service.dart';
+/// Settings screen scaffold.
 ///
-/// Theme mode is wired to the real, already-tested [themeModeProvider].
-/// App Lock and Data export are placeholder rows only — their own
-/// upcoming TODO.md tasks implement the actual logic; this screen just
-/// gives them a permanent, real home in the UI.
+/// Theme mode, App Lock, and Data export are all wired to real
+/// functionality. Change PIN / Forgot PIN are deferred — see
+/// DECISIONS.md.
+
+enum _ExportChoice { share, downloads }
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -80,12 +85,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
 
           const _SectionHeader('Data'),
-          _SettingsRow(
-            icon: PhosphorIconsRegular.export,
-            title: 'Export my data',
-            trailing: const _ComingSoonBadge(),
-            onTap: () => _showComingSoon(context, 'Data export'),
-          ),
+          const _ExportDataRow(),
           const SizedBox(height: AppSpacing.xl),
 
           const _SectionHeader('About'),
@@ -119,12 +119,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$feature — coming soon.')));
-  }
-
   String _appLockModeLabel(AppLockMode mode) {
     switch (mode) {
       case AppLockMode.os:
@@ -145,42 +139,40 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (sheetContext) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<AppLockMode>(
-                title: const Text('Device lock (biometric/PIN)'),
-                subtitle: const Text('Recommended'),
-                value: AppLockMode.os,
-                groupValue: currentMode,
-                onChanged: (_) async {
-                  Navigator.of(sheetContext).pop();
-                  await ref
-                      .read(appLockModeProvider.notifier)
-                      .setMode(AppLockMode.os);
-                },
-              ),
-              RadioListTile<AppLockMode>(
-                title: const Text('Custom PIN'),
-                value: AppLockMode.pin,
-                groupValue: currentMode,
-                onChanged: (_) async {
-                  Navigator.of(sheetContext).pop();
+          child: RadioGroup<AppLockMode>(
+            groupValue: currentMode,
+            onChanged: (mode) async {
+              if (mode == null) return;
+              Navigator.of(sheetContext).pop();
+              switch (mode) {
+                case AppLockMode.os:
+                  await ref.read(appLockModeProvider.notifier).setMode(AppLockMode.os);
+                case AppLockMode.pin:
                   await Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const PinSetupScreen()),
                   );
-                },
-              ),
-              RadioListTile<AppLockMode>(
-                title: const Text('Off'),
-                value: AppLockMode.off,
-                groupValue: currentMode,
-                onChanged: (_) {
-                  Navigator.of(sheetContext).pop();
+                case AppLockMode.off:
                   _confirmTurnOff(context, ref);
-                },
-              ),
-            ],
+              }
+            },
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<AppLockMode>(
+                  title: Text('Device lock (biometric/PIN)'),
+                  subtitle: Text('Recommended'),
+                  value: AppLockMode.os,
+                ),
+                RadioListTile<AppLockMode>(
+                  title: Text('Custom PIN'),
+                  value: AppLockMode.pin,
+                ),
+                RadioListTile<AppLockMode>(
+                  title: Text('Off'),
+                  value: AppLockMode.off,
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -267,28 +259,131 @@ class _SettingsRow extends StatelessWidget {
   }
 }
 
-class _ComingSoonBadge extends StatelessWidget {
-  const _ComingSoonBadge();
+/// Phase 1, Task 8/8b: real "Export my data" row.
+///
+/// Offers a choice between the existing Share sheet and, on Android,
+/// a direct save to the public Downloads folder via file_saver's
+/// saveAs() — see task response for why saveAs() over a raw MediaStore
+/// plugin.
+class _ExportDataRow extends ConsumerStatefulWidget {
+  const _ExportDataRow();
+
+  @override
+  ConsumerState<_ExportDataRow> createState() => _ExportDataRowState();
+}
+
+class _ExportDataRowState extends ConsumerState<_ExportDataRow> {
+  bool _isBusy = false;
+
+  Future<void> _onTap() async {
+    if (_isBusy) return;
+
+    final choice = await showModalBottomSheet<_ExportChoice>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(PhosphorIconsRegular.shareNetwork),
+              title: const Text('Share...'),
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(_ExportChoice.share),
+            ),
+            if (Platform.isAndroid)
+              ListTile(
+                leading: const Icon(PhosphorIconsRegular.downloadSimple),
+                title: const Text('Save to Downloads'),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(_ExportChoice.downloads),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (choice == null || !mounted) return;
+    switch (choice) {
+      case _ExportChoice.share:
+        await _share();
+      case _ExportChoice.downloads:
+        await _saveToDownloads();
+    }
+  }
+
+  Future<void> _share() async {
+    setState(() => _isBusy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
+
+    try {
+      final db = ref.read(appDatabaseProvider);
+      final path = await DataExportService(db).exportToFile();
+      if (!mounted) return;
+      await Share.shareXFiles([XFile(path)], text: 'Vesper data export');
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor: errorColor,
+          content: const Text(
+            "Export failed — couldn't write the file. Please try again.",
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _saveToDownloads() async {
+    setState(() => _isBusy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
+
+    try {
+      final db = ref.read(appDatabaseProvider);
+      final savedPath = await DataExportService(db).saveToDownloads();
+      if (!mounted) return;
+      if (savedPath == null) {
+        // User cancelled the system Save As dialog — not an error,
+        // nothing to report.
+        return;
+      }
+      messenger.showSnackBar(SnackBar(content: Text('Saved to $savedPath')));
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor: errorColor,
+          content: const Text("Couldn't save the file. Please try again."),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
+    return ListTile(
+      leading: Icon(
+        PhosphorIconsRegular.export,
+        color: theme.colorScheme.onSurfaceVariant,
       ),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Text(
-        'Soon',
-        style: theme.textTheme.labelLarge?.copyWith(
-          fontSize: 11,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
+      title: Text('Export my data', style: theme.textTheme.bodyLarge),
+      trailing: _isBusy
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(
+              PhosphorIconsRegular.caretRight,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+      onTap: _isBusy ? null : _onTap,
     );
   }
 }
