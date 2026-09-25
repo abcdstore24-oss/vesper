@@ -105,12 +105,110 @@ class RemoteStatusCache extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [UserProfile, RemoteStatusCache])
+/// DATABASE.md `accounts`: (id, user_id, name, type, currency,
+/// starting_balance) + created_at/updated_at per rule 3.
+///
+/// `user_id` here is NOT nullable, unlike `user_profile.userId` above.
+/// DATABASE.md rule 3 describes `user_id` as nullable "when no account
+/// exists yet" — but `user_profile`'s column predates the local-UUID
+/// mechanism actually existing. Now that it does (local_user_id.dart,
+/// added this task), every row this task creates is always stamped
+/// with a real local id at insert time, so there's no state where it
+/// would legitimately be null. `user_profile.userId` itself is
+/// untouched (out of scope this task) and stays nullable.
+@DataClassName('AccountRow')
+class Accounts extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get name => text()();
+
+  /// AccountType.name — cash/bank/card/other. Fixed enum, not free
+  /// text (task response flag, confirmed by owner).
+  TextColumn get type => text()();
+
+  TextColumn get currency => text()();
+
+   /// Integer minor units (cents), NEVER a float — money is never
+  /// stored as double/Real in this project, to avoid rounding drift
+  /// once Task 2.2 sums many transactions into a live balance. Named
+  /// explicitly `...Cents`, not `startingBalance`, so nothing
+  /// downstream can accidentally treat this as a decimal-dollar value.
+  /// This is now the standing convention for every money field project-
+  /// wide (Transactions.amount, Budgets.limit_amount,
+  /// Investments.cost_basis/current_value in later tasks) — see
+  /// DECISIONS.md.
+  IntColumn get startingBalanceCents =>
+      integer().withDefault(const Constant(0))();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// DATABASE.md `categories`: (id, user_id, name, icon, color,
+/// kind[income/expense]) + created_at/updated_at.
+///
+/// `color` stores only the light-mode hex (canonical) from the fixed
+/// 8-swatch palette in domain/category_style.dart — the dark-mode hex
+/// is derived via `CategoryPalette.darkHexFor` at render time, never
+/// stored per-row. This is CLAUDE.md Section 3's explicitly named
+/// exception ("category colors in Finance charts are the one
+/// deliberate exception") to the one-accent rule — see the DATABASE.md
+/// addition flagged in the task response. Not enforced as a DB-level
+/// constraint; the picker UI (category_form_sheet.dart) is what
+/// restricts entry to the fixed swatch set, for both defaults and
+/// custom categories.
+@DataClassName('CategoryRow')
+class Categories extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get name => text()();
+
+  /// Key into domain/category_style.dart's CategoryIcons.options map.
+  TextColumn get icon => text()();
+
+  /// Light-mode hex, e.g. '#966E40'. See class doc above.
+  TextColumn get color => text()();
+
+  /// CategoryKind.name — income/expense.
+  TextColumn get kind => text()();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Accounts, Categories])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      // Additive only. Must never touch user_profile or
+      // remote_status_cache — an installed Phase-1 build may already
+      // hold real data there (theme pref, app lock mode, cached
+      // remote status). No dropTable, no createAll, ever, here.
+      if (from < 2) {
+        await m.createTable(accounts);
+        await m.createTable(categories);
+      }
+    },
+  );
 }
 
 LazyDatabase _openConnection() {

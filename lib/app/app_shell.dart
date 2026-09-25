@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../features/dashboard/presentation/dashboard_screen.dart';
-import '../features/finance/presentation/finance_placeholder_screen.dart';
+import '../features/finance/presentation/finance_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/tasks/presentation/tasks_placeholder_screen.dart';
 import '../features/vault/presentation/vault_placeholder_screen.dart';
@@ -27,7 +27,7 @@ class AppShell extends ConsumerWidget {
 
   static const _screens = <Widget>[
     DashboardScreen(),
-    FinancePlaceholderScreen(),
+    FinanceScreen(),
     VaultPlaceholderScreen(),
     TasksPlaceholderScreen(),
     MoreScreen(),

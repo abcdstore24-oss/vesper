@@ -24,17 +24,55 @@ table must follow.
 4. Vault-related fields are marked **[ENCRYPTED]** below — these are
    encrypted client-side before ever touching local storage or sync;
    nothing server-side ever sees plaintext.
+5. **All money values are stored as integers in minor currency units
+   (cents), never as REAL/float.** This applies to every current and
+   future money field — `accounts.starting_balance_cents`,
+   `transactions.amount`, `budgets.limit_amount`,
+   `investments.cost_basis`/`current_value`,
+   `wishlist_items.est_price`/`saved_amount`, and any money field
+   added later. Floats accumulate silent rounding drift once values
+   are summed repeatedly (e.g. computing a running account balance);
+   integers don't. Decimal display values (e.g. "$12.50") are computed
+   from the stored integer only at the UI layer — never stored,
+   never summed as decimals. Locked 2026-09-25, see DECISIONS.md.
 
 ---
 
 ## Finance
-- `accounts` (id, user_id, name, type, currency, starting_balance)
+- `accounts` (id, user_id, name, type, currency, starting_balance_cents)
 - `transactions` (id, user_id, account_id, category_id, amount,
   type[income/expense], note, occurred_at, is_recurring)
 - `categories` (id, user_id, name, icon, color, kind[income/expense])
 - `budgets` (id, user_id, category_id, month, limit_amount)
 - `investments` (id, user_id, name, type, quantity, cost_basis,
   current_value, last_updated_at)
+  
+  ### Default category colors (Phase 2, Task 2.1)
+   Categories get color from a fixed 8-swatch set, not free hex entry —
+   this is the "category colors... are the one deliberate exception" to
+   the one-accent rule referenced in CLAUDE.md Section 3. Each swatch is
+   a light/dark hex pair; the `categories.color` column stores only the
+   light-mode hex (canonical), with the dark-mode pairing derived via a
+   fixed code-side lookup table — custom categories also pick from this
+   same 8-swatch set at creation time, so no category ever needs a hex
+   outside this table.
+
+   | Category | Kind | Icon (Phosphor) | Light hex | Dark hex |
+   |---|---|---|---|---|
+   | Food | expense | forkKnife | #966E40 | #D9AC78 |
+   | Transport | expense | carSimple | #4E6D97 | #8CACD9 |
+   | Bills | expense | receipt | #82745E | #B7A78F |
+   | Salary | income | handCoins | #637E44 | #A1C775 |
+   | Shopping | expense | shoppingBag | #96547B | #D491B8 |
+   | Health | expense | heartbeat | #428080 | #70C2C2 |
+   | Entertainment | expense | filmSlate | #A48D46 | #DBC480 |
+   | Other | expense | archiveBox | #8A8075 | #B3A89E |
+
+   None of these reuse the locked accent/success/danger hexes. This
+   palette is new data, not part of Section 3's locked design system —
+   it can be revised by a future session without owner sign-off the way
+   Section 3 itself requires, though changing it after real data exists
+   would need a migration note in DECISIONS.md.
 
 ## Vault (zero-knowledge)
 - `vault_items` (id, user_id, item_type[credential/note/document_ref],

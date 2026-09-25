@@ -21,7 +21,8 @@ HANDOFF.md).
       caching behavior
 
 ## Phase 2 — Finance
-- [ ] Accounts, categories, transactions tables + CRUD
+- [x] Accounts, categories + CRUD
+- [ ] Transactions
 - [ ] Monthly summary view
 - [ ] Budget tracking
 - [ ] Investment tracking
