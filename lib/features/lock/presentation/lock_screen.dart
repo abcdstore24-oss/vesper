@@ -5,6 +5,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../core/services/app_lock_provider.dart';
 import '../../../core/services/pin_storage.dart';
+import '../../../core/services/remote_status_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/pin_keypad.dart';
 
@@ -32,7 +33,17 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   @override
   void initState() {
     super.initState();
-    if (ref.read(appLockModeProvider) == AppLockMode.os) {
+    // Don't kick off the native prompt at all if kill switch is
+    // already active — _KillSwitchGate sits above this in the tree
+    // and will replace this whole subtree with KillSwitchScreen
+    // shortly anyway (possibly before this frame even settles); there
+    // is nothing here worth protecting behind a dead end, and
+    // starting the prompt here is what causes it to visibly float
+    // over KillSwitchScreen once this widget gets unmounted under it.
+    final killSwitchAlreadyActive =
+        ref.read(effectiveRemoteStatusProvider).killSwitch;
+    if (ref.read(appLockModeProvider) == AppLockMode.os &&
+        !killSwitchAlreadyActive) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _attemptOsAuth());
     }
   }
@@ -48,7 +59,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
       final supported = await _auth.isDeviceSupported();
       final canCheckBiometrics = await _auth.canCheckBiometrics;
       if (!supported && !canCheckBiometrics) {
-        setState(() => _deviceUnsupported = true);
+        if (mounted) setState(() => _deviceUnsupported = true);
         return;
       }
       ref.read(authPromptActiveProvider.notifier).set(true);
@@ -64,14 +75,18 @@ class _LockScreenState extends ConsumerState<LockScreen> {
         if (didAuthenticate) {
           ref.read(isUnlockedProvider.notifier).unlock();
         } else {
-          setState(() => _osAuthError = 'Authentication cancelled.');
+          // Guarded: if kill switch flipped true mid-prompt (see the
+          // ref.listen in build()), stopAuthentication() causes this
+          // branch to run right as _KillSwitchGate is unmounting this
+          // widget — without the mounted check this throws.
+          if (mounted) setState(() => _osAuthError = 'Authentication cancelled.');
         }
       } finally {
         ref.read(authPromptActiveProvider.notifier).set(false);
         if (mounted) setState(() => _authInProgress = false);
       }
     } catch (_) {
-      setState(() => _osAuthError = "Couldn't authenticate. Try again.");
+      if (mounted) setState(() => _osAuthError = "Couldn't authenticate. Try again.");
     } finally {
       if (mounted) setState(() => _authInProgress = false);
     }
@@ -108,6 +123,19 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mode = ref.watch(appLockModeProvider);
+
+    // If kill switch flips true WHILE a native OS prompt is already
+    // showing, cancel it — otherwise it keeps floating over
+    // KillSwitchScreen once _KillSwitchGate unmounts this widget out
+    // from under the in-flight authenticate() call.
+    ref.listen<EffectiveRemoteStatus>(effectiveRemoteStatusProvider, (
+      previous,
+      next,
+    ) {
+      if (next.killSwitch && _authInProgress) {
+        _auth.stopAuthentication();
+      }
+    });
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,

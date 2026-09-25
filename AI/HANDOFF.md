@@ -1,17 +1,22 @@
 # HANDOFF.md — Paste This at the Start of Any Future AI Session
 
 I'm continuing work on **Vesper**, a Flutter life-management app. Before
-doing anything, read all six files in this project's `AI/` folder, in
+doing anything, read all eight files in this project's `AI/` folder, in
 this order:
 
 1. `AI/CLAUDE.md` — project overview, locked design system, auth model,
    and the Rules AI must follow
-2. `AI/DATABASE.md` — schema plan
-3. `AI/API.md` — backend integration notes
-4. `AI/DECISIONS.md` — append-only decision log (history, don't edit
+2. `AI/DATABASE.md` — LOCAL (Drift/SQLite) schema plan
+3. `AI/SUPABASE.md` — SERVER-SIDE (Supabase) schema, RLS policies, and
+   grants — append-only, re-runnable SQL log. Do not confuse this with
+   DATABASE.md: they are different databases, and a table with a
+   similar name in each (e.g. `app_status` here vs.
+   `remote_status_cache` in DATABASE.md) is not the same table.
+4. `AI/API.md` — backend integration notes
+5. `AI/DECISIONS.md` — append-only decision log (history, don't edit
    past entries)
-5. `AI/TODO.md` — build checklist / current status
-6. `AI/COMPONENTS.md` — reusable widget/component registry
+6. `AI/TODO.md` — build checklist / current status
+7. `AI/COMPONENTS.md` — reusable widget/component registry
 
 **Rules for this session:**
 - Follow every rule in `CLAUDE.md` Section "Rules AI must follow" —
@@ -30,6 +35,15 @@ this order:
 - If something in my task request conflicts with a locked decision in
   these files, tell me about the conflict and ask before proceeding —
   don't silently override it.
+- Any task that requires a change to the Supabase project itself (a
+  new table, an RLS policy, a grant, anything run in the Supabase SQL
+  editor) must give me the exact SQL to run there directly — you
+  cannot run it for me. Write it as safely re-runnable SQL (`if not
+  exists`, `drop ... if exists` then `create`, `on conflict do
+  nothing`), and tell me exactly what to append to `SUPABASE.md`
+  afterward, including a verification query I can run to confirm RLS/
+  grants are actually correct — not just "looks right in the
+  dashboard."
 
 **My task for this session:**
 

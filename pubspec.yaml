@@ -51,6 +51,9 @@ dependencies:
   # Local app lock (biometric/PIN)
   local_auth: ^2.3.0
 
+  # Remote status check (public, no-login)
+  supabase_flutter: ^2.17.2
+
   # Data export
   share_plus: ^11.0.0
   file_saver: ^0.3.1

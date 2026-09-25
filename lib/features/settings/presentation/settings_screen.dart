@@ -320,7 +320,9 @@ class _ExportDataRowState extends ConsumerState<_ExportDataRow> {
       final db = ref.read(appDatabaseProvider);
       final path = await DataExportService(db).exportToFile();
       if (!mounted) return;
-      await Share.shareXFiles([XFile(path)], text: 'Vesper data export');
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(path)], text: 'Vesper data export'),
+      );
     } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(

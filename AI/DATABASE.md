@@ -114,3 +114,4 @@ No dedicated table — export is a read of the tables above (excluding all
 Vault tables) into a single JSON file written to local device storage.
 Not stored state, so nothing to schema here beyond noting the exclusion
 rule explicitly.
+

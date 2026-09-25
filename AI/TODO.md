@@ -17,7 +17,7 @@ HANDOFF.md).
       with one-time warning
 - [x] Settings screen scaffold
 - [x] Data export (JSON, non-Vault modules) — Settings screen action
-- [ ] Remote status check (maintenance/kill-switch) with offline-safe
+- [x] Remote status check (maintenance/kill-switch) with offline-safe
       caching behavior
 
 ## Phase 2 — Finance

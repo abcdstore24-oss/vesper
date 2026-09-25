@@ -248,3 +248,43 @@ Vesper, share_plus, or file_saver. If a future build genuinely fails
 (no successful APK, no install) with similar errors, standard fix: `cd
 android && .\gradlew --stop`, then `flutter clean`, then `flutter run`
 again, to clear stale daemon/incremental state.
+
+### 2026-09-24 — Remote status check (Phase 1, Task 9) — complete
+Public, no-login `app_status` table on Supabase (RLS: anon SELECT only,
+verified no write grant exists for anon at all), checked opportunistically
+on app start via `RemoteStatusService.checkAndCache()`, cached into local
+`remote_status_cache`. `last_known_good` = true only when both
+maintenance_mode and kill_switch are false on a successful check. Layering
+in main.dart, outermost to innermost: KillSwitch → App Lock → Maintenance
+→ App. Kill switch bypasses Lock entirely (nothing to protect behind a
+dead end); Maintenance sits INSIDE Lock deliberately, so a maintenance
+window clearing while the phone is unattended can never hand over the app
+without requiring a PIN/biometric first. Maintenance re-checks every 30s
+while its screen is mounted and clears itself reactively; kill switch is
+deliberately relaunch-only, no auto-recovery polling — a full kill is
+meant to be a deliberate, harder stop.
+
+Cold-start flash fix: the first value `effectiveRemoteStatusProvider`
+returns is seeded synchronously in main() (via a manually-created
+ProviderContainer + UncontrolledProviderScope, reading the real cached
+row before runApp) rather than defaulting to "open" for one frame while
+a StreamProvider warms up — same pattern already used for
+ThemeModeNotifier/AppLockModeNotifier. Residual, expected behavior: the
+very first relaunch immediately after a real status change on the
+server still shows a brief flash of the old cached state before the
+background check lands and updates it — this is inherent to
+offline-first design (the alternative would be blocking app launch on a
+network call, which is explicitly disallowed) and is not a bug. Every
+relaunch after that one is instant, since the cache is already correct.
+
+Also fixed as part of this: LockScreen's OS-auth prompt no longer starts
+at all (or is actively cancelled mid-prompt via `stopAuthentication()`)
+when kill switch is or becomes active, preventing the native biometric
+dialog from visibly floating over KillSwitchScreen during the moment
+_KillSwitchGate unmounts the Lock subtree out from under an in-flight
+authenticate() call.
+
+Confirmed working on-device: normal state, maintenance on/off with
+auto-recheck, kill switch on/off, offline-never-blocks, cached-block-
+persists-offline, kill-switch-bypasses-lock, light/dark rendering.
+**Phase 1 (Foundation) is now fully complete — see TODO.md.**
