@@ -6,6 +6,7 @@ import '../../../core/db/db_provider.dart';
 import '../../../core/services/local_user_id.dart';
 import '../domain/category_kind.dart';
 import 'category_seeder.dart';
+import 'transactions_dao.dart'; // NEW — countTransactionsForCategory + CategoryHasTransactionsException
 
 extension CategoriesDao on AppDatabase {
   Stream<List<CategoryRow>> watchCategories(String userId) {
@@ -52,13 +53,17 @@ extension CategoriesDao on AppDatabase {
     );
   }
 
-  Future<void> deleteCategory(String id) {
-    return (delete(categories)..where((c) => c.id.equals(id))).go();
+  /// Blocks deletion if any transaction still references this
+  /// category — same reasoning as AccountsDao.deleteAccount.
+  Future<void> deleteCategory(String id) async {
+    final count = await countTransactionsForCategory(id);
+    if (count > 0) {
+      throw CategoryHasTransactionsException(count);
+    }
+    await (delete(categories)..where((c) => c.id.equals(id))).go();
   }
 }
 
-/// Ensures the 8 defaults exist for this user_id — cheap no-op after
-/// the first successful run (checked via seedDefaultCategoriesIfEmpty).
 final categoriesSeedProvider = FutureProvider<void>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final userId = await LocalUserId.get();

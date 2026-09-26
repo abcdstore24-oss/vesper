@@ -5,6 +5,7 @@ import '../../../core/db/app_database.dart';
 import '../../../core/db/db_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../data/accounts_dao.dart';
+import '../data/transactions_dao.dart';
 import '../domain/account_type.dart';
 import 'account_form_sheet.dart';
 
@@ -14,6 +15,7 @@ class AccountsListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accountsAsync = ref.watch(accountsProvider);
+    final balancesAsync = ref.watch(accountBalancesProvider);
     final theme = Theme.of(context);
 
     return accountsAsync.when(
@@ -26,14 +28,17 @@ class AccountsListScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Text(
                 'No accounts yet. Tap + to add one.',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 textAlign: TextAlign.center,
               ),
             ),
           );
         }
+
+        // Balances stream can briefly lag behind accounts on first
+        // load; treat "not yet loaded" as zero net transactions
+        // rather than blocking the whole screen on it.
+        final balances = balancesAsync.asData?.value ?? const <String, int>{};
 
         return ListView.separated(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -42,10 +47,11 @@ class AccountsListScreen extends ConsumerWidget {
           itemBuilder: (context, i) {
             final account = items[i];
             final type = AccountType.values.byName(account.type);
-            // Cents -> decimal for display only. All arithmetic and
-            // storage stay in integer cents; this division happens at
-            // the render boundary, never gets stored or summed further.
-            final displayBalance = account.startingBalanceCents / 100;
+            // Live balance: starting balance + signed sum of that
+            // account's transactions (Task 2.2). Cents throughout;
+            // division to a decimal happens only here, at render.
+            final liveBalanceCents = account.startingBalanceCents + (balances[account.id] ?? 0);
+            final displayBalance = liveBalanceCents / 100;
 
             return Card(
               child: ListTile(
@@ -53,16 +59,12 @@ class AccountsListScreen extends ConsumerWidget {
                 title: Text(account.name, style: theme.textTheme.bodyLarge),
                 subtitle: Text(
                   '${type.label} · ${account.currency}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 trailing: Text(
                   '${account.currency} ${displayBalance.toStringAsFixed(2)}',
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: account.startingBalanceCents < 0
-                        ? theme.colorScheme.error
-                        : null,
+                    color: liveBalanceCents < 0 ? theme.colorScheme.error : null,
                   ),
                 ),
                 onTap: () => showModalBottomSheet(
@@ -86,19 +88,27 @@ class AccountsListScreen extends ConsumerWidget {
         title: const Text('Delete account?'),
         content: Text('This deletes "${account.name}". This can\'t be undone.'),
         actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(appDatabaseProvider).deleteAccount(account.id);
-              Navigator.pop(dialogContext);
+            onPressed: () async {
+              try {
+                await ref.read(appDatabaseProvider).deleteAccount(account.id);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              } on AccountHasTransactionsException catch (e) {
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Can't delete — ${e.count} transaction${e.count == 1 ? '' : 's'} use this account. "
+                        'Delete those transactions first.',
+                      ),
+                    ),
+                  );
+                }
+              }
             },
-            child: Text(
-              'Delete',
-              style: TextStyle(color: Theme.of(dialogContext).colorScheme.error),
-            ),
+            child: Text('Delete', style: TextStyle(color: Theme.of(dialogContext).colorScheme.error)),
           ),
         ],
       ),

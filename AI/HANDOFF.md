@@ -44,6 +44,15 @@ this order:
   afterward, including a verification query I can run to confirm RLS/
   grants are actually correct — not just "looks right in the
   dashboard."
+- DECISIONS.md entries are selective, not automatic. Only append an
+  entry for: an ambiguity the locked docs didn't settle, a
+  project-wide convention, a rejected-alternative trade-off worth
+  preserving, or something explicitly deferred. Don't restate a
+  pattern already established in a prior entry (e.g. "migration was
+  additive and safe" — see the 2026-09-26 standing-practice entry,
+  that's said once, not per task). If a task has nothing genuinely new
+  to decide, say so in one line instead of padding a numbered list to
+  look thorough.
 
 **My task for this session:**
 

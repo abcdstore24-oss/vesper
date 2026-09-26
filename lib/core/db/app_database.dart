@@ -186,12 +186,56 @@ class Categories extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Accounts, Categories])
+/// DATABASE.md `transactions`: (id, user_id, account_id, category_id,
+/// amount, type[income/expense], note, occurred_at, is_recurring) +
+/// created_at/updated_at.
+@DataClassName('TransactionRow')
+class Transactions extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+
+  /// References accounts.id / categories.id by convention only — no
+  /// Drift-level FK constraint (see DECISIONS.md: app-layer deletion
+  /// blocking in accounts_dao.dart/categories_dao.dart is the
+  /// integrity mechanism for now; revisit if PowerSync sync is wired
+  /// up for Finance, since a server-side merge could write around the
+  /// DAO layer).
+  TextColumn get accountId => text()();
+  TextColumn get categoryId => text()();
+
+  /// Integer minor units (cents), ALWAYS stored positive. Sign is
+  /// applied only at balance-computation time based on `type`, never
+  /// stored negative. Same convention as
+  /// accounts.startingBalanceCents.
+  IntColumn get amountCents => integer()();
+
+  /// CategoryKind.name ('income'/'expense') — auto-derived from the
+  /// selected category's kind at creation/edit time (locked decision,
+  /// Task 2.2). Stamped historically: editing the source category's
+  /// kind later does NOT recalculate existing transactions.
+  TextColumn get type => text()();
+
+  TextColumn get note => text().withDefault(const Constant(''))();
+  DateTimeColumn get occurredAt => dateTime()();
+
+  /// Plain boolean toggle only — no recurrence rule, no
+  /// auto-generation, no scheduling. Separate future TODO.md item.
+  BoolColumn get isRecurring => boolean().withDefault(const Constant(false))();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Accounts, Categories, Transactions])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -199,13 +243,16 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      // Additive only. Must never touch user_profile or
-      // remote_status_cache — an installed Phase-1 build may already
-      // hold real data there (theme pref, app lock mode, cached
-      // remote status). No dropTable, no createAll, ever, here.
+      // Cumulative, additive-only. Each branch creates only what
+      // didn't exist yet at that version — never touches
+      // user_profile or remote_status_cache, and (from Task 2.2 on)
+      // never touches accounts or categories either.
       if (from < 2) {
         await m.createTable(accounts);
         await m.createTable(categories);
+      }
+      if (from < 3) {
+        await m.createTable(transactions);
       }
     },
   );

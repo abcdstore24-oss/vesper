@@ -5,6 +5,7 @@ import '../../../core/db/app_database.dart';
 import '../../../core/db/db_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../data/categories_dao.dart';
+import '../data/transactions_dao.dart';
 import '../domain/category_kind.dart';
 import '../domain/category_style.dart';
 import 'category_form_sheet.dart';
@@ -64,19 +65,27 @@ class CategoriesListScreen extends ConsumerWidget {
         title: const Text('Delete category?'),
         content: Text('This deletes "${category.name}". This can\'t be undone.'),
         actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(appDatabaseProvider).deleteCategory(category.id);
-              Navigator.pop(dialogContext);
+            onPressed: () async {
+              try {
+                await ref.read(appDatabaseProvider).deleteCategory(category.id);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              } on CategoryHasTransactionsException catch (e) {
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Can't delete — ${e.count} transaction${e.count == 1 ? '' : 's'} use this category. "
+                        'Delete those transactions first.',
+                      ),
+                    ),
+                  );
+                }
+              }
             },
-            child: Text(
-              'Delete',
-              style: TextStyle(color: Theme.of(dialogContext).colorScheme.error),
-            ),
+            child: Text('Delete', style: TextStyle(color: Theme.of(dialogContext).colorScheme.error)),
           ),
         ],
       ),

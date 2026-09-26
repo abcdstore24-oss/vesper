@@ -5,10 +5,9 @@ import 'account_form_sheet.dart';
 import 'accounts_list_screen.dart';
 import 'categories_list_screen.dart';
 import 'category_form_sheet.dart';
+import 'transaction_form_sheet.dart';
+import 'transactions_list_screen.dart';
 
-/// Finance module home — Task 2.1 scope only. Transactions/Budgets/
-/// Investments (later Phase 2 tasks) are not wired in here; each gets
-/// its own tab when its own task lands.
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key});
 
@@ -23,7 +22,7 @@ class _FinanceScreenState extends State<FinanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this)
+    _tabController = TabController(length: 3, vsync: this)
       ..addListener(() => setState(() {}));
   }
 
@@ -40,25 +39,36 @@ class _FinanceScreenState extends State<FinanceScreen>
         title: const Text('Finance'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [Tab(text: 'Accounts'), Tab(text: 'Categories')],
+          tabs: const [Tab(text: 'Accounts'), Tab(text: 'Categories'), Tab(text: 'Transactions')],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [AccountsListScreen(), CategoriesListScreen()],
+        children: const [AccountsListScreen(), CategoriesListScreen(), TransactionsListScreen()],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _tabController.index == 0
-            ? showModalBottomSheet(
+        onPressed: () {
+          switch (_tabController.index) {
+            case 0:
+              showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 builder: (_) => const AccountFormSheet(),
-              )
-            : showModalBottomSheet(
+              );
+            case 1:
+              showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 builder: (_) => const CategoryFormSheet(),
-              ),
+              );
+            default:
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => const TransactionFormSheet(),
+              );
+          }
+        },
         child: const Icon(PhosphorIconsRegular.plus),
       ),
     );

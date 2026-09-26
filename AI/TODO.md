@@ -22,12 +22,13 @@ HANDOFF.md).
 
 ## Phase 2 — Finance
 - [x] Accounts, categories + CRUD
-- [ ] Transactions
+- [x] Transactions
 - [ ] Monthly summary view
 - [ ] Budget tracking
 - [ ] Investment tracking
 - [ ] Graphs/analytics (fl_chart)
 - [ ] Dashboard: financial summary card wired to real data
+- [ ] Recurring transactions engine (auto-generate future occurrences from is_recurring flag stored in Task 2.2)
 
 ## Phase 3 — Vault / Notes / Documents
 - [ ] Vault setup flow, including recovery phrase generation/display

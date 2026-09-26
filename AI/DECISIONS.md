@@ -288,3 +288,34 @@ Confirmed working on-device: normal state, maintenance on/off with
 auto-recheck, kill switch on/off, offline-never-blocks, cached-block-
 persists-offline, kill-switch-bypasses-lock, light/dark rendering.
 **Phase 1 (Foundation) is now fully complete — see TODO.md.**
+
+### 2026-09-25 — Phase 2, Task 2.1: Accounts + Categories (tested, working)
+
+1. Local user id mechanism (`lib/core/services/local_user_id.dart`) —
+   first implementation of DATABASE.md's local device-generated UUID
+   rule; every future feature should reuse this, not invent a second
+   local-id mechanism.
+2. accounts.type is a fixed enum (cash/bank/card/other), not free text.
+3. Category colors: fixed 8-swatch palette, not free hex entry —
+   approved exception to the one-accent rule (CLAUDE.md Section 3).
+   See DATABASE.md's Finance section for the table.
+4. All money values are stored as integer minor units (cents), never
+   float/REAL — project-wide convention, not just Accounts.
+
+Tested on-device, flutter analyze clean.
+
+### 2026-09-26 — Phase 2, Task 2.2: Transactions (tested, working)
+
+1. transactions.type is auto-derived from the selected category's
+   kind, not independently selectable — stamped historically, not
+   recalculated if the category's kind later changes.
+2. is_recurring is stored as a plain flag only — no auto-repeat engine
+   yet (separate TODO.md item).
+3. No DB-level FK on transactions.accountId/categoryId — deleting an
+   account/category with existing transactions is blocked, not
+   orphaned. Revisit if/when PowerSync sync is wired up for Finance.
+
+Tested on-device: add/edit/delete, live balance recalculation,
+deletion-blocking, account filter — all confirmed. flutter analyze
+clean.
+
