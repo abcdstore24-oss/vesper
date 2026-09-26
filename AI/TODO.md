@@ -23,7 +23,7 @@ HANDOFF.md).
 ## Phase 2 — Finance
 - [x] Accounts, categories + CRUD
 - [x] Transactions
-- [ ] Monthly summary view
+- [x] Monthly summary view
 - [ ] Budget tracking
 - [ ] Investment tracking
 - [ ] Graphs/analytics (fl_chart)

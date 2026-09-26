@@ -319,3 +319,13 @@ Tested on-device: add/edit/delete, live balance recalculation,
 deletion-blocking, account filter — all confirmed. flutter analyze
 clean.
 
+### 2026-09-26 — Phase 2, Task 2.3: Monthly Summary (tested, working)
+
+Read-only reporting view on existing transaction data — no schema
+change. Reused Task 2.2's Dart-side-folding and static AppColors
+access patterns; no new project-wide decisions. Fixed one bug in
+review before testing: Net stat's negative case was missing its minus
+sign (showed "50.00" in red instead of "-50.00"). Tested on-device:
+month navigation, year-boundary rollover, empty-month state, category
+breakdown, cross-tab sync with Transactions — all confirmed working.
+flutter analyze clean.
