@@ -3,6 +3,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import 'account_form_sheet.dart';
 import 'accounts_list_screen.dart';
+import 'budgets_list_screen.dart';
 import 'categories_list_screen.dart';
 import 'category_form_sheet.dart';
 import 'summary_screen.dart';
@@ -23,7 +24,7 @@ class _FinanceScreenState extends State<FinanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this)
+    _tabController = TabController(length: 5, vsync: this)
       ..addListener(() => setState(() {}));
   }
 
@@ -46,6 +47,7 @@ class _FinanceScreenState extends State<FinanceScreen>
             Tab(text: 'Categories'),
             Tab(text: 'Transactions'),
             Tab(text: 'Summary'),
+            Tab(text: 'Budgets'),
           ],
         ),
       ),
@@ -56,11 +58,14 @@ class _FinanceScreenState extends State<FinanceScreen>
           CategoriesListScreen(),
           TransactionsListScreen(),
           SummaryScreen(),
+          BudgetsListScreen(),
         ],
       ),
-      // Summary (index 3) is read-only — no add action, so no FAB
-      // shown for it.
-      floatingActionButton: _tabController.index == 3
+      // Summary (3) is read-only, no FAB. Budgets (4) has its own
+      // internal Scaffold + FAB (see budgets_list_screen.dart) since
+      // its add-form needs that tab's own month state — no shared FAB
+      // for either.
+      floatingActionButton: (_tabController.index == 3 || _tabController.index == 4)
           ? null
           : FloatingActionButton(
               onPressed: () {

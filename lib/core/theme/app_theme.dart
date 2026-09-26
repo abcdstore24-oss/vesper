@@ -163,38 +163,43 @@ class AppTheme {
     );
   }
 
-  static ColorScheme _colorScheme(AppColorPalette c, Brightness brightness) {
-    // Not in the locked token set: Material needs an "on-accent" and
-    // "on-danger" color for text/icons drawn on top of those surfaces.
-    // Derived from the palette's own background token (reads clearly on
-    // both accent shades and on danger, in both themes) rather than
-    // inventing a new white/black hex.
-    final onAccent = c.background;
+    static ColorScheme _colorScheme(AppColorPalette c, Brightness brightness) {
+      // Not in the locked token set: Material needs an "on-accent" and
+      // "on-danger" color for text/icons drawn on top of those surfaces.
+      // Derived from the palette's own background token (reads clearly on
+      // both accent shades and on danger, in both themes) rather than
+      // inventing a new white/black hex.
+      final onAccent = c.background;
 
-    return ColorScheme(
-      brightness: brightness,
-      primary: c.accent,
-      onPrimary: onAccent,
-      // CLAUDE.md Section 3: "the one accent" — Vesper has no locked
-      // secondary color, so it maps to accent rather than letting
-      // Material derive a second hue from it.
-      secondary: c.accent,
-      onSecondary: onAccent,
-      error: c.danger,
-      onError: onAccent,
-      surface: c.surface,
-      onSurface: c.textPrimary,
-      // ignore: deprecated_member_use
-      background: c.background,
-      // ignore: deprecated_member_use
-      onBackground: c.textPrimary,
-      // ignore: deprecated_member_use
-      surfaceVariant: c.surfaceVariant,
-      onSurfaceVariant: c.textSecondary,
-      outline: c.border,
-    );
-  }
-
+      return ColorScheme(
+        brightness: brightness,
+        primary: c.accent,
+        onPrimary: onAccent,
+        // CLAUDE.md Section 3: "the one accent" — Vesper has no locked
+        // secondary color, so it maps to accent rather than letting
+        // Material derive a second hue from it.
+        secondary: c.accent,
+        onSecondary: onAccent,
+        error: c.danger,
+        onError: onAccent,
+        surface: c.surface,
+        onSurface: c.textPrimary,
+        // ignore: deprecated_member_use
+        background: c.background,
+        // ignore: deprecated_member_use
+        onBackground: c.textPrimary,
+        // ignore: deprecated_member_use
+        surfaceVariant: c.surfaceVariant,
+        onSurfaceVariant: c.textSecondary,
+        // surfaceVariant's non-deprecated Material 3 replacement — set
+        // explicitly to the same locked token, not left to Flutter's own
+        // computed default, so call sites can use the current API name
+        // without pulling in an untracked color. See DECISIONS.md.
+        surfaceContainerHighest: c.surfaceVariant,
+        outline: c.border,
+      );
+    }
+    
   static TextTheme _textTheme(AppColorPalette c) {
     // Material's TextTheme has 13 roles; CLAUDE.md/AppTypography only
     // locks 6. The rest fall back to GoogleFonts.karlaTextTheme()'s own

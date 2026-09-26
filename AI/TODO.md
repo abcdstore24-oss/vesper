@@ -24,7 +24,7 @@ HANDOFF.md).
 - [x] Accounts, categories + CRUD
 - [x] Transactions
 - [x] Monthly summary view
-- [ ] Budget tracking
+- [x] Budget tracking
 - [ ] Investment tracking
 - [ ] Graphs/analytics (fl_chart)
 - [ ] Dashboard: financial summary card wired to real data

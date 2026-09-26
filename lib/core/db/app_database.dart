@@ -230,12 +230,49 @@ class Transactions extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
-@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Accounts, Categories, Transactions])
+
+/// DATABASE.md `budgets`: (id, user_id, category_id, month,
+/// limit_amount). Field renamed to `limitAmountCents` (not
+/// `limitAmount`) for the same reason `accounts.startingBalanceCents`
+/// was renamed in Task 2.1 — makes the cents convention impossible to
+/// miss at every call site, flagging as a deliberate rename from
+/// DATABASE.md's literal column name.
+@DataClassName('BudgetRow')
+class Budgets extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+
+  /// References categories.id by convention only — no DB-level FK,
+  /// same as accounts_id/category_id on Transactions (Task 2.2
+  /// decision, extended here). Always an expense-kind category at
+  /// creation (locked decision 2), enforced only by the category
+  /// picker in budget_form_sheet.dart, not at the DB level.
+  TextColumn get categoryId => text()();
+
+  /// 'YYYY-MM' TEXT, e.g. '2026-09' — not a DateTime column, per
+  /// DATABASE.md locked decision 3. See domain/month_key.dart for the
+  /// parse/format helpers.
+  TextColumn get month => text()();
+
+  /// Integer minor units (cents), same convention as every other
+  /// money field in this project.
+  IntColumn get limitAmountCents => integer()();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Accounts, Categories, Transactions, Budgets])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -243,16 +280,18 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      // Cumulative, additive-only. Each branch creates only what
-      // didn't exist yet at that version — never touches
-      // user_profile or remote_status_cache, and (from Task 2.2 on)
-      // never touches accounts or categories either.
+      // Cumulative, additive-only — each branch creates only what's
+      // missing at that version. Never touches user_profile,
+      // remote_status_cache, accounts, categories, or transactions.
       if (from < 2) {
         await m.createTable(accounts);
         await m.createTable(categories);
       }
       if (from < 3) {
         await m.createTable(transactions);
+      }
+      if (from < 4) {
+        await m.createTable(budgets);
       }
     },
   );

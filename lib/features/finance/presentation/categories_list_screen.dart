@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/db/app_database.dart';
 import '../../../core/db/db_provider.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../data/budgets_dao.dart'; // NEW — CategoryHasBudgetsException
 import '../data/categories_dao.dart';
 import '../data/transactions_dao.dart';
 import '../domain/category_kind.dart';
@@ -79,6 +80,19 @@ class CategoriesListScreen extends ConsumerWidget {
                       content: Text(
                         "Can't delete — ${e.count} transaction${e.count == 1 ? '' : 's'} use this category. "
                         'Delete those transactions first.',
+                      ),
+                    ),
+                  );
+                }
+              } on CategoryHasBudgetsException catch (e) {
+                // NEW this task.
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Can't delete — ${e.count} budget${e.count == 1 ? '' : 's'} use this category. "
+                        'Delete ${e.count == 1 ? 'it' : 'them'} first.',
                       ),
                     ),
                   );

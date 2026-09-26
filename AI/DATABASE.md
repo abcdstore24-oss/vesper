@@ -74,6 +74,12 @@ table must follow.
    Section 3 itself requires, though changing it after real data exists
    would need a migration note in DECISIONS.md.
 
+`budgets.month` is stored as TEXT in 'YYYY-MM' format (e.g. '2026-09'),
+not a DateTime column — it's a label, not a timestamp. `category_id`
+must reference an expense-kind category only (not enforced at the DB
+level, enforced by the category picker UI) — a budget caps spending,
+so income categories are excluded.
+
 ## Vault (zero-knowledge)
 - `vault_items` (id, user_id, item_type[credential/note/document_ref],
   title **[ENCRYPTED]**, payload **[ENCRYPTED, JSON blob]**,

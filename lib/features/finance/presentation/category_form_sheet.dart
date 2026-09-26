@@ -154,11 +154,11 @@ class _IconChoice extends StatelessWidget {
         height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          // ignore: deprecated_member_use — matches app_theme.dart's
-          // own established pattern: this is the locked surfaceVariant
-          // token via ColorScheme, not a Material default. Swapping to
-          // surfaceContainerHighest would pull in an unset/unintended
-          // color instead (see task response).
+          // surfaceContainerHighest is now a real alias for the locked
+          // surfaceVariant token (app_theme.dart), so this is the
+          // correct current API name pointing at the right color — no
+          // ignore: deprecated_member_use needed, and no untracked
+          // default either.
           color: selected
               ? theme.colorScheme.primary.withValues(alpha: 0.12)
               : theme.colorScheme.surfaceContainerHighest,
