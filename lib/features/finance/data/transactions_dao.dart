@@ -5,7 +5,8 @@ import '../../../core/db/app_database.dart';
 import '../../../core/db/db_provider.dart';
 import '../../../core/services/local_user_id.dart';
 import '../domain/category_kind.dart';
-import '../domain/month_summary.dart'; // NEW
+import '../domain/month_summary.dart';
+import 'investment_sales_dao.dart'; // NEW — countSalesForTransaction + TransactionHasSaleException
 
 extension TransactionsDao on AppDatabase {
   Stream<List<TransactionRow>> watchTransactions(String userId, {String? accountId}) {
@@ -18,7 +19,13 @@ extension TransactionsDao on AppDatabase {
     return query.watch();
   }
 
-  Future<void> insertTransaction({
+  /// CHANGED this task: now returns the new transaction's id (was
+  /// `Future<void>`) so investment_sales_dao.dart's sellInvestment can
+  /// link the InvestmentSale row to it. The prior call site
+  /// (transaction_form_sheet.dart) already did a bare `await
+  /// db.insertTransaction(...)` and ignored any return value, so this
+  /// is backward-compatible.
+  Future<String> insertTransaction({
     required String userId,
     required String accountId,
     required String categoryId,
@@ -28,9 +35,10 @@ extension TransactionsDao on AppDatabase {
     required DateTime occurredAt,
     required bool isRecurring,
   }) async {
+    final id = generateId();
     await into(transactions).insert(
       TransactionsCompanion.insert(
-        id: generateId(),
+        id: id,
         userId: userId,
         accountId: accountId,
         categoryId: categoryId,
@@ -41,6 +49,7 @@ extension TransactionsDao on AppDatabase {
         isRecurring: Value(isRecurring),
       ),
     );
+    return id;
   }
 
   Future<void> updateTransaction({
@@ -67,8 +76,15 @@ extension TransactionsDao on AppDatabase {
     );
   }
 
-  Future<void> deleteTransaction(String id) {
-    return (delete(transactions)..where((t) => t.id.equals(id))).go();
+  /// Blocks deletion if an investment_sales row references this
+  /// transaction — required addition this task, same typed-exception
+  /// pattern as every other deletion rule in this project.
+  Future<void> deleteTransaction(String id) async {
+    final saleCount = await countSalesForTransaction(id);
+    if (saleCount > 0) {
+      throw TransactionHasSaleException(saleCount);
+    }
+    await (delete(transactions)..where((t) => t.id.equals(id))).go();
   }
 
   Future<int> countTransactionsForAccount(String accountId) async {
@@ -112,12 +128,6 @@ final accountBalancesProvider = StreamProvider<Map<String, int>>((ref) async* {
   }
 });
 
-/// NEW (Task 2.3). Key is (year, month) — a Dart record, which has
-/// built-in structural equality, so Riverpod's `family` correctly
-/// caches per-month rather than rebuilding every month's subscription
-/// on every unrelated transaction change. Folds in Dart via
-/// MonthSummary.fromTransactions, same "sum in Dart" convention as
-/// accountBalancesProvider above.
 final monthSummaryProvider =
     StreamProvider.family<MonthSummary, (int year, int month)>((ref, key) async* {
   final db = ref.watch(appDatabaseProvider);

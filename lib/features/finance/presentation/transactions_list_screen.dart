@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../data/accounts_dao.dart';
 import '../data/categories_dao.dart';
+import '../data/investment_sales_dao.dart'; // NEW — TransactionHasSaleException
 import '../data/transactions_dao.dart';
 import '../domain/category_kind.dart';
 import '../domain/category_style.dart';
@@ -19,14 +20,10 @@ class TransactionsListScreen extends ConsumerStatefulWidget {
 }
 
 class _TransactionsListScreenState extends ConsumerState<TransactionsListScreen> {
-  /// null = "All accounts".
   String? _filterAccountId;
 
   @override
   Widget build(BuildContext context) {
-    // Ensures categories exist even if this tab is opened before the
-    // Categories tab ever was — categoriesSeedProvider is a cheap
-    // no-op once already seeded.
     ref.watch(categoriesSeedProvider);
 
     final accountsAsync = ref.watch(accountsProvider);
@@ -34,15 +31,6 @@ class _TransactionsListScreenState extends ConsumerState<TransactionsListScreen>
     final transactionsAsync = ref.watch(transactionsProvider(_filterAccountId));
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
-    // No ThemeExtension exists in this codebase for success/danger —
-    // app_theme.dart accesses AppColors.light/.dark as static consts
-    // directly, and only `danger` is wired into ColorScheme (as
-    // `error`). `success` isn't reachable via Theme.of(context) at
-    // all yet, so this uses the same static-access pattern
-    // app_theme.dart already uses, rather than a context accessor
-    // that doesn't exist. See task response if you want a proper
-    // ThemeExtension added to app_theme.dart later.
     final successColor = isDark ? AppColors.dark.success : AppColors.light.success;
 
     return accountsAsync.when(
@@ -125,10 +113,6 @@ class _TransactionsListScreenState extends ConsumerState<TransactionsListScreen>
                             trailing: Text(
                               '${isIncome ? '+' : '-'}${(txn.amountCents / 100).toStringAsFixed(2)}',
                               style: theme.textTheme.titleMedium?.copyWith(
-                                // success token for income, error
-                                // (danger) for expense — matches the
-                                // negative-balance pattern already in
-                                // accounts_list_screen.dart.
                                 color: isIncome ? successColor : theme.colorScheme.error,
                               ),
                             ),
@@ -164,9 +148,28 @@ class _TransactionsListScreenState extends ConsumerState<TransactionsListScreen>
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
           TextButton(
-            onPressed: () {
-              ref.read(appDatabaseProvider).deleteTransaction(id);
-              Navigator.pop(dialogContext);
+            onPressed: () async {
+              // CHANGED this task: deleteTransaction can now throw
+              // TransactionHasSaleException — was previously a bare
+              // fire-and-forget call with no possible failure to
+              // handle. Same try/catch/SnackBar pattern as every
+              // other deletion-blocking rule in this project.
+              try {
+                await ref.read(appDatabaseProvider).deleteTransaction(id);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              } on TransactionHasSaleException catch (e) {
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Can't delete — this transaction is linked to ${e.count} investment sale"
+                        "${e.count == 1 ? '' : 's'}. Delete from the investment's sale history first.",
+                      ),
+                    ),
+                  );
+                }
+              }
             },
             child: Text('Delete', style: TextStyle(color: Theme.of(dialogContext).colorScheme.error)),
           ),

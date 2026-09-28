@@ -267,12 +267,94 @@ class Budgets extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Accounts, Categories, Transactions, Budgets])
+/// DATABASE.md `investments`: (id, user_id, name, type, quantity,
+/// cost_basis_cents, current_value_cents, last_updated_at) +
+/// created_at/updated_at. See DATABASE.md's Investments subsection
+/// (task response) for the full field-by-field rationale.
+@DataClassName('InvestmentRow')
+class Investments extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get name => text()();
+
+  /// InvestmentType.name — stock/crypto/realEstate/other (camelCase
+  /// enum member names, same convention as AccountType/CategoryKind;
+  /// not literally DATABASE.md's snake_case 'real_estate').
+  TextColumn get type => text()();
+
+  /// Plain informational number (e.g. "10 shares", "0.5 BTC") — NEVER
+  /// multiplied into cost_basis/current_value (locked decision 3).
+  /// REAL, not cents — not a money field, exempt from the
+  /// integer-cents rule for that reason.
+  RealColumn get quantity => real()();
+
+  /// TOTAL cost basis, integer cents — not per-unit.
+  IntColumn get costBasisCents => integer()();
+
+  /// TOTAL current value, integer cents — not per-unit. Initialized
+  /// equal to costBasisCents at creation (investments_dao.dart);
+  /// changed only via updateCurrentValue (update_value_dialog.dart),
+  /// never through the full edit form.
+  IntColumn get currentValueCents => integer()();
+
+  /// Auto-set to DateTime.now() only when currentValueCents changes —
+  /// never directly user-editable (locked decision 4).
+  DateTimeColumn get lastUpdatedAt => dateTime()();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// New this task: investment_sales — records a partial or full sale
+/// of an Investment. See investment_sales_dao.dart for the
+/// proportional cost-basis-reduction math (task response, plan).
+@DataClassName('InvestmentSaleRow')
+class InvestmentSales extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get investmentId => text()();
+
+  /// REAL, not cents — same "not a money field, exempt from the
+  /// cents rule" reasoning as Investments.quantity.
+  RealColumn get quantitySold => real()();
+
+  IntColumn get proceedsCents => integer()();
+
+  /// proceeds_cents - proportional cost basis removed at the moment
+  /// of sale. A historical snapshot: if the linked transaction's
+  /// amount is edited afterward, this does NOT retroactively update
+  /// (see DECISIONS.md note in task response).
+  IntColumn get realizedGainCents => integer()();
+
+  DateTimeColumn get soldAt => dateTime()();
+
+  /// References transactions.id — the income Transaction created for
+  /// this sale's proceeds. No DB-level FK (project convention), but
+  /// deletion-blocked in BOTH directions this task: deleteInvestment
+  /// blocks if sales exist, and deleteTransaction now blocks if a
+  /// sale still references it.
+  TextColumn get transactionId => text()();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [
+  UserProfile, RemoteStatusCache, Accounts, Categories, Transactions, Budgets, Investments, InvestmentSales,
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -280,9 +362,9 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      // Cumulative, additive-only — each branch creates only what's
-      // missing at that version. Never touches user_profile,
-      // remote_status_cache, accounts, categories, or transactions.
+      // Cumulative, additive-only. Never touches user_profile,
+      // remote_status_cache, accounts, categories, transactions,
+      // budgets, or investments.
       if (from < 2) {
         await m.createTable(accounts);
         await m.createTable(categories);
@@ -292,6 +374,12 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await m.createTable(budgets);
+      }
+      if (from < 5) {
+        await m.createTable(investments);
+      }
+      if (from < 6) {
+        await m.createTable(investmentSales);
       }
     },
   );

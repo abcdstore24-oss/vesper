@@ -44,8 +44,41 @@ table must follow.
   type[income/expense], note, occurred_at, is_recurring)
 - `categories` (id, user_id, name, icon, color, kind[income/expense])
 - `budgets` (id, user_id, category_id, month, limit_amount)
-- `investments` (id, user_id, name, type, quantity, cost_basis,
-  current_value, last_updated_at)
+- `investments` (id, user_id, name, type, quantity, cost_basis_cents,
+  current_value_cents, last_updated_at)
+- `investment_sales` (id, user_id, investment_id, quantity_sold,
+  proceeds_cents, realized_gain_cents, sold_at, transaction_id) —
+  records a partial or full sale of an investment.
+
+  **Investments (Task 2.5 + 2.6):**
+  - `quantity` is REAL, not cents — a plain informational number
+    (e.g. "10 shares", "0.5 BTC"), never multiplied into any
+    calculation. Exempt from the money-as-integer-cents rule because
+    it isn't a money field. `investment_sales.quantity_sold` follows
+    the same REAL convention.
+  - `cost_basis_cents`/`current_value_cents` are TOTAL amounts, not
+    per-unit — `quantity` is display-only.
+  - `type` is a fixed enum (stock/crypto/real_estate/other), stored in
+    the DB as the Dart enum's camelCase `.name` (`stock`/`crypto`/
+    `realEstate`/`other`), matching `AccountType`/`CategoryKind`'s
+    convention rather than this doc's snake_case.
+  - `current_value_cents` is initialized equal to `cost_basis_cents`
+    at creation. `last_updated_at` is set only by the dedicated
+    "Update value" action — never by the general edit form, never
+    directly user-editable.
+  - Selling proportionally reduces `quantity`/`cost_basis_cents` (never
+    deletes the row, even when fully sold — sale history stays
+    attached to a zero-quantity investment) and creates an
+    income-typed Transaction for the proceeds. No DB-level FK from
+    `investment_sales` to `investments`/`transactions` — both
+    directions are deletion-blocked at the app layer instead: deleting
+    an investment or a transaction that has sale history attached is
+    blocked, not allowed to orphan the sale record.
+  - `investment_sales` rows are a historical snapshot taken at the
+    moment of sale — editing the linked transaction's amount
+    afterward does not retroactively recompute `proceeds_cents`/
+    `realized_gain_cents`, same convention as `transactions.type`
+    staying stamped after a category's kind later changes.
   
   ### Default category colors (Phase 2, Task 2.1)
    Categories get color from a fixed 8-swatch set, not free hex entry —
@@ -73,6 +106,16 @@ table must follow.
    it can be revised by a future session without owner sign-off the way
    Section 3 itself requires, though changing it after real data exists
    would need a migration note in DECISIONS.md.
+
+A 9th default category, "Investments" (income-kind, piggyBank icon,
+reuses the Transport swatch), was added after Task 2.6 exposed that
+the original 8 defaults had only one income category (Salary) —
+insufficient once investment sale proceeds needed their own category.
+Existing installs receive it via a one-time idempotent top-up
+(`ensureInvestmentsCategoryExists`), not the original seeder, since the
+seeder only ever fires once per user when their category table is
+empty. Any future default-category addition should follow this same
+top-up pattern.
 
 `budgets.month` is stored as TEXT in 'YYYY-MM' format (e.g. '2026-09'),
 not a DateTime column — it's a label, not a timestamp. `category_id`

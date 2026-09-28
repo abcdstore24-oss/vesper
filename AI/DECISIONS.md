@@ -329,3 +329,86 @@ sign (showed "50.00" in red instead of "-50.00"). Tested on-device:
 month navigation, year-boundary rollover, empty-month state, category
 breakdown, cross-tab sync with Transactions — all confirmed working.
 flutter analyze clean.
+
+### 2026-09-26 — Budget form dropdown race condition, fixed
+budget_form_sheet.dart's category dropdown could throw a one-frame
+assertion right after Save: inserting a budget updates the live
+"categories not yet budgeted" list the form was still watching,
+leaving the just-picked category id pointing at a value no longer in
+the dropdown's items. Fixed by freezing the form to a spinner the
+instant saving starts, so it never rebuilds against live provider data
+again mid-save. Standing rule going forward: any form whose input
+options are filtered by "not already used elsewhere" must stop
+watching that live data once its own save begins. Confirmed fixed via
+repeated on-device testing.
+
+### 2026-09-26 — Phase 2, Task 2.5: Investment tracking (tested, working)
+1. cost_basis_cents/current_value_cents are TOTAL amounts, not
+   per-unit — quantity is informational only (REAL, exempt from the
+   money-cents rule since it's never used in a calculation).
+2. current_value_cents initializes equal to cost_basis_cents at
+   creation; only the dedicated "Update value" action can change it.
+3. No DB-level FK — confirmed correct, nothing in the schema
+   references or is referenced by investments (at the time this task
+   was built; Task 2.6 later added investment_sales referencing it).
+4. Quantity display formatting (InvestmentType.formatQuantity) fixed
+   to never emit scientific notation for very small values (e.g.
+   crypto quantities like 0.00000001) — consolidated into one shared
+   method rather than duplicated across two files.
+
+Tested on-device: add/edit/update-value/delete, portfolio totals,
+fractional quantities including very small values, large-amount
+FittedBox rendering, upgrade path. flutter analyze clean.
+
+### 2026-09-26 — Phase 2, Task 2.6: Sell/Reduce an Investment (tested, working)
+1. Selling proportionally reduces quantity and cost basis; the cost
+   basis removed is rounded once (nearest cent) and the remainder is
+   derived by subtraction, never independently rounded — guarantees
+   the split always sums back to the original cost basis exactly.
+   A full sell (remaining quantity within 1e-9 of zero) is an explicit
+   special case that zeroes out exactly, not left to fraction ≈ 1.0.
+2. Selling creates a real income Transaction for the proceeds — a sale
+   is not just an edit to the investment's numbers, it's a real cash
+   event and needed to show up in Accounts/Summary like any other
+   transaction.
+3. deleteTransaction and deleteInvestment both now block if
+   investment_sales history references them — required to prevent
+   orphaning a sale record from either direction.
+4. investment_sales rows are a historical snapshot — editing the
+   linked transaction's amount later does not retroactively update
+   proceeds/realized gain.
+5. transactions_dao.dart and investment_sales_dao.dart have a
+   deliberate two-way import (each calls into the other) — a
+   structural exception to this project's otherwise one-directional
+   DAO dependencies; valid Dart, no cycle issue, flagged for
+   awareness.
+
+Tested on-device: partial sell math (including an uneven 1/3 split
+checked by hand), full sell zeroing exactly, deletion-blocking in both
+directions, boundary-case selling of the exact remaining quantity,
+fractional-quantity sells, the created transaction correctly appearing
+in Transactions/Summary/account balance, upgrade path. flutter analyze
+clean.
+
+### 2026-09-26 — Investments default category added (fixes Sell defaulting to Salary)
+The original 8 default categories (Task 2.1) had only one income-kind
+category (Salary), so Task 2.6's Sell form always defaulted stock/
+crypto sale proceeds into "Salary" — not a deliberate choice, just the
+only option available. Added "Investments" (income-kind, piggyBank
+icon, reuses Transport's blue swatch to stay visually distinct from
+Salary's olive) as a 9th default. Categories sort alphabetically
+throughout the app, so Investments (I) sorting before Salary (S) is
+what makes it the new default in Sell's category dropdown — no
+special-case selection logic was added or needed. Existing installs
+receive the new category via a one-time idempotent top-up
+(ensureInvestmentsCategoryExists, run alongside the existing seeder
+provider), since the original seeder only fires once per user when
+their category table is empty and would never re-run for anyone who
+already has categories. This top-up pattern is now the standing
+approach for any future default-category addition.
+
+Tested on-device: fresh install seeds all 9; existing install receives
+exactly one new category via top-up with no duplicates across repeated
+launches; Sell now defaults to Investments; regular Add Transaction
+still defaults to Bills (unaffected) and still allows picking any
+income category freely. flutter analyze clean.
