@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/db/app_database.dart';
 import '../../../core/db/db_provider.dart';
 import '../data/investments_dao.dart';
+import '../../../core/services/local_user_id.dart';
 
 /// Quick, single-field action — only ever touches currentValueCents
 /// (lastUpdatedAt is set automatically by
@@ -67,14 +68,15 @@ class _UpdateValueDialogState extends ConsumerState<UpdateValueDialog> {
     );
   }
 
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
+    Future<void> _save() async {
+      if (!_formKey.currentState!.validate()) return;
+      setState(() => _saving = true);
 
-    final db = ref.read(appDatabaseProvider);
-    final cents = (double.parse(_valueController.text) * 100).round();
-    await db.updateCurrentValue(id: widget.investment.id, currentValueCents: cents);
+      final db = ref.read(appDatabaseProvider);
+      final cents = (double.parse(_valueController.text) * 100).round();
+      final userId = await LocalUserId.get(); // NEW — updateCurrentValue now requires userId to record a snapshot
+      await db.updateCurrentValue(userId: userId, id: widget.investment.id, currentValueCents: cents);
 
-    if (mounted) Navigator.pop(context);
-  }
+      if (mounted) Navigator.pop(context);
+    }
 }

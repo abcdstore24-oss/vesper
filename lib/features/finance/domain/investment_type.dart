@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../../core/db/app_database.dart'; // NEW — CategoryRow, for preferredFundingCategory
+
 enum InvestmentType {
   stock,
   crypto,
@@ -23,21 +25,9 @@ enum InvestmentType {
 
   /// Formats a quantity for display — trims trailing zeros ("10.0" ->
   /// "10", "0.50" -> "0.5") without ever emitting scientific notation.
-  ///
-  /// Real bug fixed here: Dart's double.toString() switches to
-  /// exponential notation for very small magnitudes (e.g. 0.00000001
-  /// -> "1e-8"), which is plausible input for crypto quantities
-  /// specifically. If toString() would contain 'e'/'E', this falls
-  /// back to a fixed-decimal representation (8 decimal places, then
-  /// trims trailing zeros the same way) instead of the raw result.
-  ///
-  /// Lives here rather than on the per-investment screens (was
-  /// duplicated in investment_form_sheet.dart and
-  /// investments_list_screen.dart) — this is per-type-independent
-  /// formatting logic, not per-type data, but InvestmentType is
-  /// still the shared, already-imported home for investment-domain
-  /// helpers, so a static method here beats a third copy or a new
-  /// file for one function.
+  /// See git history / DECISIONS.md for the scientific-notation fix
+  /// this method absorbed (was duplicated in two presentation files
+  /// before being consolidated here).
   static String formatQuantity(double q) {
     var s = q.toString();
     if (s.contains('e') || s.contains('E')) {
@@ -48,5 +38,34 @@ enum InvestmentType {
       s = s.replaceFirst(RegExp(r'\.$'), '');
     }
     return s;
+  }
+
+  /// NEW this task — moved here from a short-lived separate
+  /// category_defaults.dart file, per the same "one small shared
+  /// helper doesn't need its own file" precedent formatQuantity above
+  /// already set.
+  ///
+  /// The category investment_form_sheet.dart's and
+  /// buy_more_investment_sheet.dart's funding-category pickers should
+  /// default to, given an already-filtered list of expense-kind
+  /// categories. Prefers the category named exactly "Investment
+  /// Purchase" (case-sensitive — a fixed name this project controls
+  /// via category_seeder.dart, so an exact match is deliberate; a
+  /// looser match would risk silently preferring an unrelated
+  /// user-created category with a similar name); falls back to
+  /// [expenseCategories].first (alphabetically first, since both call
+  /// sites source this list from categoriesProvider) if that category
+  /// was ever deleted or renamed. Returns null only if
+  /// [expenseCategories] is itself empty — neither call site should
+  /// actually reach that case, since both already show a "no expense
+  /// categories yet" message and return before computing a default at
+  /// all when the list is empty.
+  static CategoryRow? preferredFundingCategory(List<CategoryRow> expenseCategories) {
+    if (expenseCategories.isEmpty) return null;
+    const targetName = 'Investment Purchase';
+    for (final c in expenseCategories) {
+      if (c.name == targetName) return c;
+    }
+    return expenseCategories.first;
   }
 }

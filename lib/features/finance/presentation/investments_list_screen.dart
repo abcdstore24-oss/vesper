@@ -6,13 +6,15 @@ import '../../../core/db/app_database.dart';
 import '../../../core/db/db_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../data/investment_sales_dao.dart'; // NEW — InvestmentHasSalesException + investmentQuantityEpsilon
+import '../data/investment_snapshots_dao.dart';
+import '../data/investment_sales_dao.dart';
 import '../data/investments_dao.dart';
 import '../domain/investment_type.dart';
 import 'investment_form_sheet.dart';
 import 'investment_sale_history_sheet.dart';
 import 'sell_investment_sheet.dart';
 import 'update_value_dialog.dart';
+import 'buy_more_investment_sheet.dart';
 
 class InvestmentsListScreen extends ConsumerWidget {
   const InvestmentsListScreen({super.key});
@@ -20,6 +22,7 @@ class InvestmentsListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final investmentsAsync = ref.watch(investmentsProvider);
+    ref.watch(investmentSnapshotsSeedProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final successColor = isDark ? AppColors.dark.success : AppColors.light.success;
@@ -167,6 +170,15 @@ class _InvestmentTile extends ConsumerWidget {
                     onPressed: () => showDialog(
                       context: context,
                       builder: (_) => UpdateValueDialog(investment: investment),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Buy more',
+                    icon: const Icon(PhosphorIconsRegular.plusCircle),
+                    onPressed: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (_) => BuyMoreInvestmentSheet(investment: investment),
                     ),
                   ),
                   IconButton(

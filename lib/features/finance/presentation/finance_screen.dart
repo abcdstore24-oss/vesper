@@ -6,6 +6,7 @@ import 'accounts_list_screen.dart';
 import 'budgets_list_screen.dart';
 import 'categories_list_screen.dart';
 import 'category_form_sheet.dart';
+import 'charts_screen.dart';
 import 'investments_list_screen.dart';
 import 'summary_screen.dart';
 import 'transaction_form_sheet.dart';
@@ -25,7 +26,7 @@ class _FinanceScreenState extends State<FinanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this)
+    _tabController = TabController(length: 7, vsync: this)
       ..addListener(() => setState(() {}));
   }
 
@@ -50,6 +51,7 @@ class _FinanceScreenState extends State<FinanceScreen>
             Tab(text: 'Summary'),
             Tab(text: 'Budgets'),
             Tab(text: 'Investments'),
+            Tab(text: 'Charts'),
           ],
         ),
       ),
@@ -62,11 +64,12 @@ class _FinanceScreenState extends State<FinanceScreen>
           SummaryScreen(),
           BudgetsListScreen(),
           InvestmentsListScreen(),
+          ChartsScreen(),
         ],
       ),
-      // Summary (3) is read-only. Budgets (4) and Investments (5) each
-      // have their own internal Scaffold + FAB — no shared FAB for
-      // any of the three.
+      // Summary (3) and Charts (6) are read-only. Budgets (4) and
+      // Investments (5) each have their own internal Scaffold + FAB.
+      // None of the four use the shared FAB.
       floatingActionButton: (_tabController.index >= 3)
           ? null
           : FloatingActionButton(

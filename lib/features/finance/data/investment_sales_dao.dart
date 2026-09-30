@@ -5,6 +5,7 @@ import '../../../core/db/app_database.dart';
 import '../../../core/db/db_provider.dart';
 import '../../../core/services/local_user_id.dart';
 import '../domain/category_kind.dart';
+import 'investment_snapshots_dao.dart'; // NEW — recordInvestmentSnapshot
 import 'transactions_dao.dart'; // db.insertTransaction — see note below on the resulting circular import
 
 // NOTE on the circular import: this file imports transactions_dao.dart
@@ -34,35 +35,43 @@ extension InvestmentSalesDao on AppDatabase {
         .watch();
   }
 
-  /// Used by TransactionsDao.deleteTransaction (transactions_dao.dart)
-  /// — required addition this task.
   Future<int> countSalesForTransaction(String transactionId) async {
     final rows = await (select(investmentSales)..where((s) => s.transactionId.equals(transactionId))).get();
     return rows.length;
   }
 
-  /// Used by InvestmentsDao.deleteInvestment (investments_dao.dart).
   Future<int> countSalesForInvestment(String investmentId) async {
     final rows = await (select(investmentSales)..where((s) => s.investmentId.equals(investmentId))).get();
     return rows.length;
   }
 
-  /// Sells [quantitySold] of [investment] for [proceedsCents], against
-  /// [accountId]/[categoryId] (categoryId must be income-kind —
-  /// enforced by sell_investment_sheet.dart's picker, not here).
+  /// BUG FIX this task: previously reduced quantity and costBasisCents
+  /// but never touched currentValueCents, so after any sale the tile's
+  /// Gain/Loss and portfolio totals were overstated — the sold-off
+  /// value stayed counted in current value while the proceeds ALSO
+  /// landed in an account, double-counting money on a full sell.
   ///
-  /// Rounding rule (task response, worked examples given in plan):
-  /// round costBasisRemovedCents exactly once (nearest cent via a
-  /// fraction of the pre-sale cost basis); the remaining cost basis is
-  /// the ORIGINAL minus that already-rounded value, never a second
-  /// independent round() — guarantees the two halves always sum back
-  /// to the original exactly. A full sell (remaining quantity within
-  /// epsilon of zero) is handled as an explicit special case that
-  /// zeroes out exactly, rather than relying on fraction ≈ 1.0 to
-  /// round cleanly.
+  /// Fix mirrors the cost-basis reduction exactly: same fraction
+  /// (quantitySold / quantity), round the removed amount once, get
+  /// the remainder by subtraction (never a second round) — so
+  /// currentValueRemovedCents + newCurrentValueCents always sums back
+  /// to the original currentValueCents exactly, same guarantee the
+  /// cost-basis math already had. Full sell zeroes current value
+  /// exactly, same explicit-branch approach as cost basis, rather
+  /// than trusting fraction ~= 1.0 to round cleanly.
   ///
-  /// All three writes run inside db.transaction() — atomic, no
-  /// partial application if any step fails.
+  /// lastUpdatedAt is deliberately NOT touched by a sale — price per
+  /// unit hasn't changed, so the "as of" date of the valuation isn't
+  /// new information (task response). realizedGainCents math is
+  /// unchanged: proceeds minus cost basis removed, nothing to do with
+  /// current value.
+  ///
+  /// Also new this task: records a post-sale snapshot of the
+  /// investment's new current value, ALWAYS at DateTime.now() (see
+  /// InvestmentValueSnapshots.recordedAt's doc comment in
+  /// app_database.dart for the backdated-sale limitation this
+  /// implies) — inside this same db.transaction, so the sale, the
+  /// investment update, and the snapshot all commit or fail together.
   Future<void> sellInvestment({
     required String userId,
     required InvestmentRow investment,
@@ -75,7 +84,6 @@ extension InvestmentSalesDao on AppDatabase {
     if (quantitySold <= 0) {
       throw ArgumentError('quantitySold must be greater than 0');
     }
-    // Required addition #2: epsilon tolerance, not a strict <=.
     if (quantitySold > investment.quantity + investmentQuantityEpsilon) {
       throw ArgumentError('quantitySold exceeds remaining quantity');
     }
@@ -84,18 +92,24 @@ extension InvestmentSalesDao on AppDatabase {
     final isFullSell = remaining <= investmentQuantityEpsilon;
 
     final int costBasisRemovedCents;
+    final int currentValueRemovedCents; // NEW
     final double newQuantity;
     final int newCostBasisCents;
+    final int newCurrentValueCents; // NEW
 
     if (isFullSell) {
       costBasisRemovedCents = investment.costBasisCents;
+      currentValueRemovedCents = investment.currentValueCents; // NEW
       newQuantity = 0;
       newCostBasisCents = 0;
+      newCurrentValueCents = 0; // NEW
     } else {
       final fraction = quantitySold / investment.quantity;
       costBasisRemovedCents = (investment.costBasisCents * fraction).round();
+      currentValueRemovedCents = (investment.currentValueCents * fraction).round(); // NEW — same fraction, own rounding
       newQuantity = remaining;
       newCostBasisCents = investment.costBasisCents - costBasisRemovedCents;
+      newCurrentValueCents = investment.currentValueCents - currentValueRemovedCents; // NEW — subtraction, not a second round
     }
 
     final realizedGainCents = proceedsCents - costBasisRemovedCents;
@@ -117,6 +131,9 @@ extension InvestmentSalesDao on AppDatabase {
         InvestmentsCompanion(
           quantity: Value(newQuantity),
           costBasisCents: Value(newCostBasisCents),
+          currentValueCents: Value(newCurrentValueCents), // NEW — the actual bug fix
+          // lastUpdatedAt deliberately NOT written here — a sale isn't
+          // a new valuation, per task response.
           updatedAt: Value(now),
         ),
       );
@@ -133,19 +150,23 @@ extension InvestmentSalesDao on AppDatabase {
           transactionId: transactionId,
         ),
       );
+
+      // NEW — post-sale snapshot, same transaction, always "now".
+      await recordInvestmentSnapshot(
+        userId: userId,
+        investmentId: investment.id,
+        valueCents: newCurrentValueCents,
+        recordedAt: now,
+      );
     });
   }
 }
 
-/// Thrown by InvestmentsDao.deleteInvestment when sale history exists.
 class InvestmentHasSalesException implements Exception {
   InvestmentHasSalesException(this.count);
   final int count;
 }
 
-/// Thrown by TransactionsDao.deleteTransaction when a sale still
-/// references this transaction as its proceeds record — required
-/// addition this task; nothing referenced a transaction before now.
 class TransactionHasSaleException implements Exception {
   TransactionHasSaleException(this.count);
   final int count;

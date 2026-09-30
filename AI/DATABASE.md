@@ -47,8 +47,34 @@ table must follow.
 - `investments` (id, user_id, name, type, quantity, cost_basis_cents,
   current_value_cents, last_updated_at)
 - `investment_sales` (id, user_id, investment_id, quantity_sold,
-  proceeds_cents, realized_gain_cents, sold_at, transaction_id) —
-  records a partial or full sale of an investment.
+  proceeds_cents, realized_gain_cents, sold_at, transaction_id)
+- `investment_value_snapshots` (id, user_id, investment_id,
+  value_cents, recorded_at) — a point-in-time record of an
+  investment's current value, written on every value-changing action
+  (creation, Update Value, Sell, Buy More). No DB-level FK. `recorded_at`
+  is always the moment the value was written, never backdated — a sale
+  entered with a past date still snapshots at "now," which is a known,
+  disclosed limitation for the net-worth chart. Deleting an investment
+  deletes its snapshots with it, which means deleting an investment
+  reduces the net-worth chart's past months too, not just future ones
+  — also disclosed on-screen, not fixed.
+
+  **Fixed after real use:** selling now reduces `current_value_cents`
+  proportionally, same rounding rule as `cost_basis_cents` (previously
+  only cost basis was reduced, which overstated Gain/Loss and
+  double-counted value after a full sell). `last_updated_at` is not
+  touched by a sale, since price-per-unit hasn't changed.
+
+  **Buy more:** a new `buyMoreInvestment` action adds to an existing
+  holding — quantity and cost basis both increase by the amount
+  entered, and current value increases by the same amount (not left
+  stale), so the newly-bought portion starts at zero Gain/Loss.
+  `last_updated_at` DOES advance here, unlike a sale.
+
+  **Optional funding:** creating a new investment or buying more can
+  each optionally create a matching expense Transaction against a
+  chosen account/category ("Fund this from an account," default on) —
+  mirrors how Sell already credits an account on the way out.
 
   **Investments (Task 2.5 + 2.6):**
   - `quantity` is REAL, not cents — a plain informational number
@@ -107,21 +133,36 @@ table must follow.
    Section 3 itself requires, though changing it after real data exists
    would need a migration note in DECISIONS.md.
 
-A 9th default category, "Investments" (income-kind, piggyBank icon,
-reuses the Transport swatch), was added after Task 2.6 exposed that
-the original 8 defaults had only one income category (Salary) —
-insufficient once investment sale proceeds needed their own category.
-Existing installs receive it via a one-time idempotent top-up
-(`ensureInvestmentsCategoryExists`), not the original seeder, since the
-seeder only ever fires once per user when their category table is
-empty. Any future default-category addition should follow this same
-top-up pattern.
+Two default categories were added after real use exposed gaps: 9th,
+"Investments" (income, for Sell's proceeds — Salary was the only
+income category before this); 10th, "Investment Purchase" (expense,
+for funding a purchase). Both reach existing installs via the
+idempotent top-up pattern, not the original seeder. The funding
+pickers explicitly prefer "Investment Purchase" by name rather than
+relying on alphabetical order, since alphabetical order only happened
+to favor the right category for the income side.
 
 `budgets.month` is stored as TEXT in 'YYYY-MM' format (e.g. '2026-09'),
 not a DateTime column — it's a label, not a timestamp. `category_id`
 must reference an expense-kind category only (not enforced at the DB
 level, enforced by the category picker UI) — a budget caps spending,
 so income categories are excluded.
+
+### Charts (Graphs/analytics)
+Three sections, Finance → Charts tab, each independently loading/
+erroring/empty so none can hide another:
+- Income vs Expense trend — 6-month bar chart, current month
+  marked month-to-date.
+- Spending by category — donut for a selectable month, expense-typed
+  spending only.
+- Net worth — 6-month line chart. Each month's figure is computed
+  as-of that month's end: account balances rebuilt from starting
+  balance + transactions up to the cutoff, plus each investment's
+  most recent value snapshot at or before the cutoff — an investment
+  with no snapshot yet by that month simply isn't counted (not
+  zero). Two limitations are disclosed on-screen: earlier months can
+  read lower purely because fewer investments were tracked yet, and
+  deleting an investment removes its history from past months too.
 
 ## Vault (zero-knowledge)
 - `vault_items` (id, user_id, item_type[credential/note/document_ref],

@@ -26,7 +26,7 @@ HANDOFF.md).
 - [x] Monthly summary view
 - [x] Budget tracking
 - [x] Investment tracking
-- [ ] Graphs/analytics (fl_chart)
+- [x] Graphs/analytics (fl_chart)
 - [ ] Dashboard: financial summary card wired to real data
 - [ ] Recurring transactions engine (auto-generate future occurrences from is_recurring flag stored in Task 2.2)
 

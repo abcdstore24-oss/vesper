@@ -80,6 +80,7 @@ final categoriesSeedProvider = FutureProvider<void>((ref) async {
   final userId = await LocalUserId.get();
   await db.seedDefaultCategoriesIfEmpty(userId);
   await db.ensureInvestmentsCategoryExists(userId);
+  await db.ensureInvestmentPurchaseCategoryExists(userId); // NEW this task
 });
 
 final categoriesProvider = StreamProvider<List<CategoryRow>>((ref) async* {

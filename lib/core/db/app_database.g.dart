@@ -4379,6 +4379,497 @@ class InvestmentSalesCompanion extends UpdateCompanion<InvestmentSaleRow> {
   }
 }
 
+class $InvestmentValueSnapshotsTable extends InvestmentValueSnapshots
+    with TableInfo<$InvestmentValueSnapshotsTable, InvestmentValueSnapshotRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $InvestmentValueSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _investmentIdMeta = const VerificationMeta(
+    'investmentId',
+  );
+  @override
+  late final GeneratedColumn<String> investmentId = GeneratedColumn<String>(
+    'investment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueCentsMeta = const VerificationMeta(
+    'valueCents',
+  );
+  @override
+  late final GeneratedColumn<int> valueCents = GeneratedColumn<int>(
+    'value_cents',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordedAtMeta = const VerificationMeta(
+    'recordedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+    'recorded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => DateTime.now(),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => DateTime.now(),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    investmentId,
+    valueCents,
+    recordedAt,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'investment_value_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<InvestmentValueSnapshotRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('investment_id')) {
+      context.handle(
+        _investmentIdMeta,
+        investmentId.isAcceptableOrUnknown(
+          data['investment_id']!,
+          _investmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_investmentIdMeta);
+    }
+    if (data.containsKey('value_cents')) {
+      context.handle(
+        _valueCentsMeta,
+        valueCents.isAcceptableOrUnknown(data['value_cents']!, _valueCentsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueCentsMeta);
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+        _recordedAtMeta,
+        recordedAt.isAcceptableOrUnknown(data['recorded_at']!, _recordedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  InvestmentValueSnapshotRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return InvestmentValueSnapshotRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      investmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}investment_id'],
+      )!,
+      valueCents: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}value_cents'],
+      )!,
+      recordedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recorded_at'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $InvestmentValueSnapshotsTable createAlias(String alias) {
+    return $InvestmentValueSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class InvestmentValueSnapshotRow extends DataClass
+    implements Insertable<InvestmentValueSnapshotRow> {
+  final String id;
+  final String userId;
+
+  /// References investments.id — no DB-level FK (project convention).
+  /// Deleted together with its investment in one db.transaction
+  /// (investments_dao.dart) — snapshots are derived history, not user
+  /// records, so they never block a deletion themselves.
+  final String investmentId;
+  final int valueCents;
+
+  /// ALWAYS DateTime.now() at the moment the value changed — including
+  /// the post-sale snapshot in sellInvestment, even when the sale's
+  /// own soldAt date is in the past. A sale backdated into a past
+  /// month therefore leaves that month's DERIVED net worth (once a
+  /// net-worth chart exists) double-counting: both the proceeds
+  /// (landed in an account on the backdated date) and the pre-sale
+  /// investment value (still "current" as of today, since no snapshot
+  /// exists at the backdated date). This cannot be made correct
+  /// without guessing at a historical valuation that was never
+  /// recorded — snapshots are not backdated to compensate. The
+  /// eventual chart screen states this as a known limitation.
+  final DateTime recordedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const InvestmentValueSnapshotRow({
+    required this.id,
+    required this.userId,
+    required this.investmentId,
+    required this.valueCents,
+    required this.recordedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['investment_id'] = Variable<String>(investmentId);
+    map['value_cents'] = Variable<int>(valueCents);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  InvestmentValueSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return InvestmentValueSnapshotsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      investmentId: Value(investmentId),
+      valueCents: Value(valueCents),
+      recordedAt: Value(recordedAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory InvestmentValueSnapshotRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return InvestmentValueSnapshotRow(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      investmentId: serializer.fromJson<String>(json['investmentId']),
+      valueCents: serializer.fromJson<int>(json['valueCents']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'investmentId': serializer.toJson<String>(investmentId),
+      'valueCents': serializer.toJson<int>(valueCents),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  InvestmentValueSnapshotRow copyWith({
+    String? id,
+    String? userId,
+    String? investmentId,
+    int? valueCents,
+    DateTime? recordedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => InvestmentValueSnapshotRow(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    investmentId: investmentId ?? this.investmentId,
+    valueCents: valueCents ?? this.valueCents,
+    recordedAt: recordedAt ?? this.recordedAt,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  InvestmentValueSnapshotRow copyWithCompanion(
+    InvestmentValueSnapshotsCompanion data,
+  ) {
+    return InvestmentValueSnapshotRow(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      investmentId: data.investmentId.present
+          ? data.investmentId.value
+          : this.investmentId,
+      valueCents: data.valueCents.present
+          ? data.valueCents.value
+          : this.valueCents,
+      recordedAt: data.recordedAt.present
+          ? data.recordedAt.value
+          : this.recordedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InvestmentValueSnapshotRow(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('investmentId: $investmentId, ')
+          ..write('valueCents: $valueCents, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    investmentId,
+    valueCents,
+    recordedAt,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is InvestmentValueSnapshotRow &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.investmentId == this.investmentId &&
+          other.valueCents == this.valueCents &&
+          other.recordedAt == this.recordedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class InvestmentValueSnapshotsCompanion
+    extends UpdateCompanion<InvestmentValueSnapshotRow> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> investmentId;
+  final Value<int> valueCents;
+  final Value<DateTime> recordedAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const InvestmentValueSnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.investmentId = const Value.absent(),
+    this.valueCents = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  InvestmentValueSnapshotsCompanion.insert({
+    required String id,
+    required String userId,
+    required String investmentId,
+    required int valueCents,
+    required DateTime recordedAt,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       investmentId = Value(investmentId),
+       valueCents = Value(valueCents),
+       recordedAt = Value(recordedAt);
+  static Insertable<InvestmentValueSnapshotRow> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? investmentId,
+    Expression<int>? valueCents,
+    Expression<DateTime>? recordedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (investmentId != null) 'investment_id': investmentId,
+      if (valueCents != null) 'value_cents': valueCents,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  InvestmentValueSnapshotsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? investmentId,
+    Value<int>? valueCents,
+    Value<DateTime>? recordedAt,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return InvestmentValueSnapshotsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      investmentId: investmentId ?? this.investmentId,
+      valueCents: valueCents ?? this.valueCents,
+      recordedAt: recordedAt ?? this.recordedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (investmentId.present) {
+      map['investment_id'] = Variable<String>(investmentId.value);
+    }
+    if (valueCents.present) {
+      map['value_cents'] = Variable<int>(valueCents.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InvestmentValueSnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('investmentId: $investmentId, ')
+          ..write('valueCents: $valueCents, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4393,6 +4884,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $InvestmentSalesTable investmentSales = $InvestmentSalesTable(
     this,
   );
+  late final $InvestmentValueSnapshotsTable investmentValueSnapshots =
+      $InvestmentValueSnapshotsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4406,6 +4899,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     budgets,
     investments,
     investmentSales,
+    investmentValueSnapshots,
   ];
 }
 
@@ -6652,6 +7146,281 @@ typedef $$InvestmentSalesTableProcessedTableManager =
       InvestmentSaleRow,
       PrefetchHooks Function()
     >;
+typedef $$InvestmentValueSnapshotsTableCreateCompanionBuilder =
+    InvestmentValueSnapshotsCompanion Function({
+      required String id,
+      required String userId,
+      required String investmentId,
+      required int valueCents,
+      required DateTime recordedAt,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$InvestmentValueSnapshotsTableUpdateCompanionBuilder =
+    InvestmentValueSnapshotsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> investmentId,
+      Value<int> valueCents,
+      Value<DateTime> recordedAt,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$InvestmentValueSnapshotsTableFilterComposer
+    extends Composer<_$AppDatabase, $InvestmentValueSnapshotsTable> {
+  $$InvestmentValueSnapshotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get investmentId => $composableBuilder(
+    column: $table.investmentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get valueCents => $composableBuilder(
+    column: $table.valueCents,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$InvestmentValueSnapshotsTableOrderingComposer
+    extends Composer<_$AppDatabase, $InvestmentValueSnapshotsTable> {
+  $$InvestmentValueSnapshotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get investmentId => $composableBuilder(
+    column: $table.investmentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get valueCents => $composableBuilder(
+    column: $table.valueCents,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$InvestmentValueSnapshotsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $InvestmentValueSnapshotsTable> {
+  $$InvestmentValueSnapshotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get investmentId => $composableBuilder(
+    column: $table.investmentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get valueCents => $composableBuilder(
+    column: $table.valueCents,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$InvestmentValueSnapshotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $InvestmentValueSnapshotsTable,
+          InvestmentValueSnapshotRow,
+          $$InvestmentValueSnapshotsTableFilterComposer,
+          $$InvestmentValueSnapshotsTableOrderingComposer,
+          $$InvestmentValueSnapshotsTableAnnotationComposer,
+          $$InvestmentValueSnapshotsTableCreateCompanionBuilder,
+          $$InvestmentValueSnapshotsTableUpdateCompanionBuilder,
+          (
+            InvestmentValueSnapshotRow,
+            BaseReferences<
+              _$AppDatabase,
+              $InvestmentValueSnapshotsTable,
+              InvestmentValueSnapshotRow
+            >,
+          ),
+          InvestmentValueSnapshotRow,
+          PrefetchHooks Function()
+        > {
+  $$InvestmentValueSnapshotsTableTableManager(
+    _$AppDatabase db,
+    $InvestmentValueSnapshotsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$InvestmentValueSnapshotsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$InvestmentValueSnapshotsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$InvestmentValueSnapshotsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> investmentId = const Value.absent(),
+                Value<int> valueCents = const Value.absent(),
+                Value<DateTime> recordedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InvestmentValueSnapshotsCompanion(
+                id: id,
+                userId: userId,
+                investmentId: investmentId,
+                valueCents: valueCents,
+                recordedAt: recordedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String investmentId,
+                required int valueCents,
+                required DateTime recordedAt,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InvestmentValueSnapshotsCompanion.insert(
+                id: id,
+                userId: userId,
+                investmentId: investmentId,
+                valueCents: valueCents,
+                recordedAt: recordedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $InvestmentValueSnapshotsTable,
+                    InvestmentValueSnapshotRow
+                  >(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $InvestmentValueSnapshotsTable,
+                    InvestmentValueSnapshotRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$InvestmentValueSnapshotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $InvestmentValueSnapshotsTable,
+      InvestmentValueSnapshotRow,
+      $$InvestmentValueSnapshotsTableFilterComposer,
+      $$InvestmentValueSnapshotsTableOrderingComposer,
+      $$InvestmentValueSnapshotsTableAnnotationComposer,
+      $$InvestmentValueSnapshotsTableCreateCompanionBuilder,
+      $$InvestmentValueSnapshotsTableUpdateCompanionBuilder,
+      (
+        InvestmentValueSnapshotRow,
+        BaseReferences<
+          _$AppDatabase,
+          $InvestmentValueSnapshotsTable,
+          InvestmentValueSnapshotRow
+        >,
+      ),
+      InvestmentValueSnapshotRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6672,4 +7441,9 @@ class $AppDatabaseManager {
       $$InvestmentsTableTableManager(_db, _db.investments);
   $$InvestmentSalesTableTableManager get investmentSales =>
       $$InvestmentSalesTableTableManager(_db, _db.investmentSales);
+  $$InvestmentValueSnapshotsTableTableManager get investmentValueSnapshots =>
+      $$InvestmentValueSnapshotsTableTableManager(
+        _db,
+        _db.investmentValueSnapshots,
+      );
 }

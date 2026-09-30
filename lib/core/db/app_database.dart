@@ -347,14 +347,55 @@ class InvestmentSales extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// New this task: investment_value_snapshots — a point-in-time record
+/// of an investment's current_value_cents, written every time that
+/// value is set or changes. Foundation for a future net-worth chart;
+/// no snapshot-reading provider or screen exists yet (that's a later
+/// task).
+@DataClassName('InvestmentValueSnapshotRow')
+class InvestmentValueSnapshots extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+
+  /// References investments.id — no DB-level FK (project convention).
+  /// Deleted together with its investment in one db.transaction
+  /// (investments_dao.dart) — snapshots are derived history, not user
+  /// records, so they never block a deletion themselves.
+  TextColumn get investmentId => text()();
+
+  IntColumn get valueCents => integer()();
+
+  /// ALWAYS DateTime.now() at the moment the value changed — including
+  /// the post-sale snapshot in sellInvestment, even when the sale's
+  /// own soldAt date is in the past. A sale backdated into a past
+  /// month therefore leaves that month's DERIVED net worth (once a
+  /// net-worth chart exists) double-counting: both the proceeds
+  /// (landed in an account on the backdated date) and the pre-sale
+  /// investment value (still "current" as of today, since no snapshot
+  /// exists at the backdated date). This cannot be made correct
+  /// without guessing at a historical valuation that was never
+  /// recorded — snapshots are not backdated to compensate. The
+  /// eventual chart screen states this as a known limitation.
+  DateTimeColumn get recordedAt => dateTime()();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(tables: [
-  UserProfile, RemoteStatusCache, Accounts, Categories, Transactions, Budgets, Investments, InvestmentSales,
+  UserProfile, RemoteStatusCache, Accounts, Categories, Transactions, Budgets, Investments,
+  InvestmentSales, InvestmentValueSnapshots,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -364,7 +405,7 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) async {
       // Cumulative, additive-only. Never touches user_profile,
       // remote_status_cache, accounts, categories, transactions,
-      // budgets, or investments.
+      // budgets, or investments/investment_sales.
       if (from < 2) {
         await m.createTable(accounts);
         await m.createTable(categories);
@@ -380,6 +421,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await m.createTable(investmentSales);
+      }
+      if (from < 7) {
+        await m.createTable(investmentValueSnapshots);
       }
     },
   );
