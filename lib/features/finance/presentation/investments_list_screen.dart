@@ -29,6 +29,7 @@ class InvestmentsListScreen extends ConsumerWidget {
     final dangerColor = isDark ? AppColors.dark.danger : AppColors.light.danger;
 
     return Scaffold(
+      appBar: AppBar(title: const Text('Investments')),
       body: investmentsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text("Couldn't load investments: $e")),

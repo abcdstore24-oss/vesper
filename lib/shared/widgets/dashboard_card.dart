@@ -59,7 +59,12 @@ class DashboardCard extends StatelessWidget {
                 Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: Text(title, style: theme.textTheme.titleMedium),
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium,
+                    maxLines: 2, // NEW — caps title growth; can only reduce height, never increase it.
+                    overflow: TextOverflow.ellipsis, // NEW
+                  ),
                 ),
               ],
             ),

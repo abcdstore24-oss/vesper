@@ -58,6 +58,7 @@ class _BudgetsListScreenState extends ConsumerState<BudgetsListScreen> {
     final spentAsync = ref.watch(categorySpentProvider(_monthKey));
 
     return Scaffold(
+      appBar: AppBar(title: const Text('Budgets')),
       body: Column(
         children: [
           Padding(

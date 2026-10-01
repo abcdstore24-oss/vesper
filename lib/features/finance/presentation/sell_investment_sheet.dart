@@ -132,6 +132,7 @@ class _SellInvestmentSheetState extends ConsumerState<SellInvestmentSheet> {
                       DropdownButtonFormField<String>(
                         initialValue: effectiveAccountId,
                         decoration: const InputDecoration(labelText: 'Account (proceeds go to)'),
+                        isExpanded: true,
                         items: [
                           for (final a in accountList) DropdownMenuItem(value: a.id, child: Text(a.name)),
                         ],
@@ -141,6 +142,7 @@ class _SellInvestmentSheetState extends ConsumerState<SellInvestmentSheet> {
                       DropdownButtonFormField<String>(
                         initialValue: effectiveCategoryId,
                         decoration: const InputDecoration(labelText: 'Category (income)'),
+                        isExpanded: true,
                         items: [
                           for (final c in incomeCategories) DropdownMenuItem(value: c.id, child: Text(c.name)),
                         ],

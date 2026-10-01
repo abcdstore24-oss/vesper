@@ -121,6 +121,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                       DropdownButtonFormField<String>(
                         initialValue: effectiveAccountId,
                         decoration: const InputDecoration(labelText: 'Account'),
+                        isExpanded: true,
                         items: [
                           for (final a in accountList) DropdownMenuItem(value: a.id, child: Text(a.name)),
                         ],
@@ -130,6 +131,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                       DropdownButtonFormField<String>(
                         initialValue: effectiveCategoryId,
                         decoration: const InputDecoration(labelText: 'Category'),
+                        isExpanded: true,
                         items: [
                           for (final c in categoryList)
                             DropdownMenuItem(
