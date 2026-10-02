@@ -27,7 +27,7 @@ HANDOFF.md).
 - [x] Budget tracking
 - [x] Investment tracking
 - [x] Graphs/analytics (fl_chart)
-- [ ] Dashboard: financial summary card wired to real data
+- [x] Dashboard: financial summary card wired to real data
 - [ ] Recurring transactions engine (auto-generate future occurrences from is_recurring flag stored in Task 2.2)
 
 ## Phase 3 — Vault / Notes / Documents

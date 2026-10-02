@@ -256,7 +256,11 @@ class _InvestmentTile extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete investment?'),
-        content: Text('This deletes "${investment.name}". This can\'t be undone.'),
+        content: Text(
+          'This permanently erases "${investment.name}" and its entire history — '
+          'use Delete only for an entry added by mistake. If you actually owned '
+          'and sold this, use Sell instead.',
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
           TextButton(

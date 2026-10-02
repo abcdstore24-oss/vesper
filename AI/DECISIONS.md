@@ -412,3 +412,28 @@ exactly one new category via top-up with no duplicates across repeated
 launches; Sell now defaults to Investments; regular Add Transaction
 still defaults to Bills (unaffected) and still allows picking any
 income category freely. flutter analyze clean.
+
+### 2026-10-01 — Delete vs. Sell semantics for investments, clarified (no code change)
+Owner clarified intended semantics: Delete means "remove this entry and
+all its history, as if it never existed" (for mistaken entries), while
+Sell means "I owned this and genuinely parted with it" (history before
+the sale must stay visible in the net-worth chart, and sale proceeds
+must land in an account). Traced both code paths against these
+definitions: Sell already satisfies this exactly (never deletes
+anything, pre-sale snapshots are untouched, proceeds are a real credited
+transaction). Delete already satisfies this too (erases the investment
+and its own snapshots), AND is hard-blocked if any sale history exists
+— meaning Delete can only ever erase an investment that was never sold,
+which lines up with "mistaken entry" almost exactly. A proposed fix to
+stop Delete from erasing snapshots was considered and explicitly
+withdrawn — that would have made Delete behave like Sell, which is the
+wrong direction given the owner's actual intent. No code changed.
+
+### 2026-10-01 — Investment delete confirmation reworded
+Dialog text now steers the user toward Sell when appropriate: "This
+permanently erases '[name]' and its entire history — use Delete only
+for an entry added by mistake. If you actually owned and sold this,
+use Sell instead." Copy-only change; deleteInvestment's logic and the
+sale-history blocking exception are unchanged. See the 2026-10-01
+Delete-vs-Sell semantics entry above for why both operations were
+already correct.
