@@ -437,3 +437,62 @@ use Sell instead." Copy-only change; deleteInvestment's logic and the
 sale-history blocking exception are unchanged. See the 2026-10-01
 Delete-vs-Sell semantics entry above for why both operations were
 already correct.
+
+### 2026-10-02 — Recurring transactions engine, built and hardened through real use (tested, working)
+Core engine: a rule (account, category, amount, frequency, start/end
+date) generates real transactions only once their due date has
+actually arrived — checked lazily on Finance view/resume, never
+pre-dated into the future (this constraint is structural: the
+due-vs-today check runs before every generation, not by convention).
+
+Three real bugs were found and fixed after initial build, through
+actual device testing rather than code review alone:
+1. Generation only ran once per app session (IndexedStack never
+   disposes FinanceScreen) — fixed by adding explicit triggers on both
+   app-resume-while-Finance-active and tab-switch-to-Finance.
+2. Reactivating a paused rule backfilled the entire paused window —
+   fixed to skip forward to today instead, generating nothing for the
+   gap.
+3. A possible race between overlapping generation checks acting on a
+   stale in-memory rule copy — fixed by re-selecting each rule fresh
+   as the first statement inside its own transaction.
+
+A fourth issue was caught before it ever shipped: the original
+monthly/yearly date math used raw DateTime overflow, which could skip
+an entire short month (Aug 31 -> Oct 1, no September). This was
+corrected to anchor-clamped advancement (day-31 anchor -> Feb 28 ->
+Mar 31 -> Apr 30 ...) before release, not left as "deliberate drift"
+as first approved — on reflection, a feature tracking real bills can't
+tolerate silently skipped months.
+
+deleteAccount/deleteCategory extended to block on referencing
+recurring rules, found during design — the same orphaned-reference
+risk already fixed for transactions/budgets/sales elsewhere.
+
+Separately: a pre-existing, unrelated bug was found and fixed during
+this work — LocalUserId.get() had a check-then-generate-then-write
+race on fresh installs, where concurrent calls from different
+providers could each generate a different local user_id, causing
+newly-added data to be invisible until a cold restart. Fixed by
+memoizing the in-flight Future itself (not just its resolved value),
+the standard Dart idiom for this class of race. Confirmed via repeated
+fresh-install testing.
+
+recurring_screen.dart was also missing the categoriesSeedProvider
+watch every other category-consuming screen already had, causing "add
+a category first" to show incorrectly if Recurring was opened before
+ever visiting Categories on a fresh install — fixed with the same
+one-line pattern used elsewhere.
+
+### 2026-10-02 — Loans & IOUs tracker: Part 1 scoped, Net Worth inclusion deferred
+Recording money lent/borrowed as a plain Income/Expense transaction
+corrupts real income/expense totals — it's a temporary transfer, not
+earning or spending. Modeled after Investments (principal = cost
+basis, outstanding balance = current value, a future repayment flow =
+Sell/Buy More). Part 1 (this task) is core tracking only: a `loans`
+table, add/edit/list, deletion blocked once any repayment activity
+exists (mirrors deleteInvestment's blocking condition). Outstanding
+balances are explicitly NOT included in Net Worth/Charts/Summary in
+Part 1 — whether an amount owed TO you should count as an asset, and
+an amount you owe should count as a liability, is a real decision
+deferred to Part 2 once repayments exist to test against.

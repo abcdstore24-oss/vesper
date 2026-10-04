@@ -6,6 +6,7 @@ import '../../../core/db/db_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../data/accounts_dao.dart';
 import '../data/transactions_dao.dart';
+import '../data/recurring_rules_dao.dart';
 import '../domain/account_type.dart';
 import 'account_form_sheet.dart';
 
@@ -102,6 +103,19 @@ class AccountsListScreen extends ConsumerWidget {
                       content: Text(
                         "Can't delete — ${e.count} transaction${e.count == 1 ? '' : 's'} use this account. "
                         'Delete those transactions first.',
+                      ),
+                    ),
+                  );
+                }
+              } on AccountHasRecurringRuleException catch (e) {
+                // NEW this task.
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Can't delete — ${e.count} recurring rule${e.count == 1 ? '' : 's'} use this account. "
+                        'Delete or reassign them first.',
                       ),
                     ),
                   );

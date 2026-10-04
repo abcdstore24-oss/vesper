@@ -164,6 +164,62 @@ erroring/empty so none can hide another:
   read lower purely because fewer investments were tracked yet, and
   deleting an investment removes its history from past months too.
 
+  ### Recurring transactions
+New table `recurring_transaction_rules` (id, user_id, account_id,
+category_id, amount_cents, note, frequency[daily/weekly/monthly/
+yearly], start_date, end_date [nullable = never ends], next_due_date,
+is_active) + created_at/updated_at, standard integer-cents on
+amount_cents, no DB-level FK (project convention). New nullable column
+`transactions.recurring_rule_id` links a generated transaction back to
+its rule, also no FK — editing or deleting a generated transaction
+never affects the rule, and deleting a rule never touches transactions
+it already generated.
+
+**Generation is strictly backward-only and checked lazily whenever
+Finance is viewed or resumed from background while active** (no
+background scheduler) — for every active rule with
+`next_due_date <= today`, one real transaction generates per missed
+period, capped at 60 per check. No transaction is ever generated with
+a future date — enforced structurally, the due-vs-today check runs
+before every single generation.
+
+**Monthly/yearly advancement is anchor-clamped, not overflow-based.**
+Each rule stores its original start-date day as a fixed anchor. A
+day-31 monthly rule lands on Feb 28, Mar 31, Apr 30, May 31, ... —
+every month represented, anchor day restored whenever the target
+month is long enough. (An earlier "overflow" approach — allowing
+`DateTime(year, month+1, day)` to roll freely — was found to SKIP
+entire short months, e.g. Aug 31 landing on Oct 1 with September
+getting nothing. That was corrected; anchor-clamping is the only
+correct behavior for this feature.) A Feb 29 yearly anchor clamps to
+Feb 28 in non-leap years and restores on the next leap year.
+
+**Pausing freezes generation for free** — the generation query only
+selects `is_active == true` rows. **Reactivating a paused rule skips
+forward to the first due date on or after today, generating nothing
+for the paused window** — pausing means the rule doesn't apply during
+that time, not that debt silently accrues.
+
+**Race-safety:** each rule is re-selected fresh as the first statement
+inside its own generation transaction, so two overlapping checks can't
+both act on the same stale `next_due_date`.
+
+`deleteAccount`/`deleteCategory` also block if any recurring rule
+references them, same typed-exception pattern as every other deletion
+rule in this project — found during design, not in the original scope:
+without this, a deleted account referenced by a rule would let
+generated transactions silently vanish from every balance calculation.
+
+**Deferred, not fixed:** editing a rule's frequency does not realign
+`next_due_date` to the new cadence. Confirmed minor, left for later.
+
+The old manual-transaction "Recurring" toggle was removed entirely
+(transaction_form_sheet.dart) — it only tagged a single transaction
+with no functional effect anywhere, and kept the same name as the real
+feature, which was actively confusing once real recurring rules
+existed. The underlying `is_recurring` column is unchanged and is
+still set correctly by generated transactions.
+
 ## Vault (zero-knowledge)
 - `vault_items` (id, user_id, item_type[credential/note/document_ref],
   title **[ENCRYPTED]**, payload **[ENCRYPTED, JSON blob]**,

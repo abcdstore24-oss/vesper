@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../data/budgets_dao.dart'; // NEW — CategoryHasBudgetsException
 import '../data/categories_dao.dart';
 import '../data/transactions_dao.dart';
+import '../data/recurring_rules_dao.dart';
 import '../domain/category_kind.dart';
 import '../domain/category_style.dart';
 import 'category_form_sheet.dart';
@@ -85,7 +86,6 @@ class CategoriesListScreen extends ConsumerWidget {
                   );
                 }
               } on CategoryHasBudgetsException catch (e) {
-                // NEW this task.
                 if (dialogContext.mounted) Navigator.pop(dialogContext);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -93,6 +93,19 @@ class CategoriesListScreen extends ConsumerWidget {
                       content: Text(
                         "Can't delete — ${e.count} budget${e.count == 1 ? '' : 's'} use this category. "
                         'Delete ${e.count == 1 ? 'it' : 'them'} first.',
+                      ),
+                    ),
+                  );
+                }
+              } on CategoryHasRecurringRuleException catch (e) {
+                // NEW this task.
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Can't delete — ${e.count} recurring rule${e.count == 1 ? '' : 's'} use this category. "
+                        'Delete or reassign them first.',
                       ),
                     ),
                   );

@@ -28,7 +28,9 @@ HANDOFF.md).
 - [x] Investment tracking
 - [x] Graphs/analytics (fl_chart)
 - [x] Dashboard: financial summary card wired to real data
-- [ ] Recurring transactions engine (auto-generate future occurrences from is_recurring flag stored in Task 2.2)
+- [x] Recurring transactions engine
+- [ ] Loans & IOUs tracker — track money lent to or borrowed from
+      people, separate from Income/Expense
 
 ## Phase 3 — Vault / Notes / Documents
 - [ ] Vault setup flow, including recovery phrase generation/display

@@ -8,6 +8,7 @@ import '../domain/category_kind.dart';
 import 'budgets_dao.dart';
 import 'category_seeder.dart';
 import 'transactions_dao.dart';
+import 'recurring_rules_dao.dart';
 
 extension CategoriesDao on AppDatabase {
   Stream<List<CategoryRow>> watchCategories(String userId) {
@@ -54,6 +55,11 @@ extension CategoriesDao on AppDatabase {
     );
   }
 
+    /// CHANGED this task: also blocks on recurring rules, same
+  /// reasoning as AccountsDao.deleteAccount above — an orphaned
+  /// category reference would permanently stall that rule's
+  /// generation (see _generateForRule's defensive null-category
+  /// break).
   Future<void> deleteCategory(String id) async {
     final transactionCount = await countTransactionsForCategory(id);
     if (transactionCount > 0) {
@@ -62,6 +68,10 @@ extension CategoriesDao on AppDatabase {
     final budgetCount = await countBudgetsForCategory(id);
     if (budgetCount > 0) {
       throw CategoryHasBudgetsException(budgetCount);
+    }
+    final ruleCount = await countRulesForCategory(id);
+    if (ruleCount > 0) {
+      throw CategoryHasRecurringRuleException(ruleCount);
     }
     await (delete(categories)..where((c) => c.id.equals(id))).go();
   }

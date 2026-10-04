@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../../app/nav_index_provider.dart'; // NEW
 import '../../../core/db/app_database.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -9,6 +10,7 @@ import '../../../shared/widgets/dashboard_card.dart';
 import '../data/accounts_dao.dart';
 import '../data/categories_dao.dart';
 import '../data/investments_dao.dart';
+import '../data/recurring_rules_dao.dart';
 import '../data/transactions_dao.dart';
 import '../domain/category_kind.dart';
 import '../domain/category_style.dart';
@@ -17,15 +19,77 @@ import 'budgets_list_screen.dart';
 import 'categories_screen.dart';
 import 'charts_page.dart';
 import 'investments_list_screen.dart';
+import 'recurring_screen.dart';
 import 'summary_page.dart';
 import 'transaction_form_sheet.dart';
 import 'transactions_screen.dart';
 
-class FinanceScreen extends StatelessWidget {
+/// CHANGED this task: ConsumerWidget -> ConsumerStatefulWidget, to add
+/// a WidgetsBindingObserver (Bug 1). No existing app-resume mechanism
+/// was reusable — confirmed by searching the codebase: the only
+/// WidgetsBindingObserver anywhere is _LockOverlay in main.dart,
+/// scoped purely to app-lock re-locking, not a general hook. This
+/// reuses that STRUCTURAL pattern (observer mixin on a State) but is
+/// a new, Finance-scoped instance — main.dart is untouched.
+class FinanceScreen extends ConsumerStatefulWidget {
   const FinanceScreen({super.key});
 
   @override
+  ConsumerState<FinanceScreen> createState() => _FinanceScreenState();
+}
+
+class _FinanceScreenState extends ConsumerState<FinanceScreen> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Bug 1, case (a): app resumes from background while Finance is
+    // the active tab.
+    if (state == AppLifecycleState.resumed) {
+      if (ref.read(navIndexProvider) == 1) {
+        ref.invalidate(recurringGenerationProvider);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Bug 1, case (b): user switches TO the Finance tab. ref.listen,
+    // not a side effect inside build() — this IS the listen call,
+    // registered unconditionally every build, which is the correct
+    // way to call it inside build().
+    ref.listen<int>(navIndexProvider, (previous, next) {
+      if (next == 1) {
+        ref.invalidate(recurringGenerationProvider);
+      }
+    });
+
+    ref.watch(recurringGenerationProvider);
+    ref.listen<AsyncValue<({int transactionCount, int ruleCount})>>(recurringGenerationProvider, (previous, next) {
+      final result = next.asData?.value;
+      if (result != null && result.transactionCount > 0) {
+        final txnWord = result.transactionCount == 1 ? 'transaction' : 'transactions';
+        final ruleWord = result.ruleCount == 1 ? 'rule' : 'rules';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Generated ${result.transactionCount} recurring $txnWord across ${result.ruleCount} $ruleWord',
+            ),
+          ),
+        );
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(title: const Text('Finance')),
       body: ListView(
@@ -48,14 +112,6 @@ class FinanceScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
           Text('Manage', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppSpacing.md),
-          // CHANGED this task: was 4 separate full-width
-          // DashboardCard entries (_NavCard) — now one Card of
-          // ListTile rows, matching the Card+ListTile convention
-          // every other list in this feature already uses (Accounts,
-          // Categories, Budgets, Investments, Transactions), rather
-          // than borrowing the main Dashboard's card-grid visual
-          // language. _NavCard is removed — nothing else in this
-          // file used it.
           const _ManageSection(),
         ],
       ),
@@ -85,8 +141,6 @@ class _ManageEntry {
   final VoidCallback onTap;
 }
 
-/// One Card, 4 ListTile rows, thin Divider between consecutive rows
-/// (none after the last) — same order, same destinations as before.
 class _ManageSection extends StatelessWidget {
   const _ManageSection();
 
@@ -127,6 +181,15 @@ class _ManageSection extends StatelessWidget {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+        ),
+      ),
+      _ManageEntry(
+        icon: PhosphorIconsRegular.arrowsClockwise,
+        title: 'Recurring',
+        subtitle: 'Auto-repeating transactions',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RecurringScreen()),
         ),
       ),
     ];

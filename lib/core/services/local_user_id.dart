@@ -26,9 +26,36 @@ class LocalUserId {
   static const _storage = FlutterSecureStorage();
   static const _key = 'vesper.local_user_id';
 
-  /// Returns the persisted local user id, generating and storing one
-  /// on first call if none exists yet.
-  static Future<String> get() async {
+  /// FIXED this task: memoizes the in-flight Future itself, not just
+  /// the resolved string. On a fresh install, many providers call
+  /// get() near-simultaneously; without this, each concurrent call
+  /// would independently see "no ID exists yet" (the secure-storage
+  /// read hadn't completed for any of them), each generate a
+  /// DIFFERENT id, and each write — different parts of the app then
+  /// operating under different user_ids until a cold restart forced
+  /// everyone to re-read whichever value ended up persisted last.
+  /// Confirmed via real on-device reproduction (see task).
+  ///
+  /// get() is deliberately NOT async — its body has no await, so it
+  /// runs to completion in one uninterrupted turn of Dart's
+  /// single-threaded event loop. The first call's `??=` creates and
+  /// caches _loadOrCreate()'s Future; every call after that —
+  /// regardless of how many arrive before the first one resolves —
+  /// returns that SAME cached Future reference, so all callers end up
+  /// awaiting one shared read-or-create operation rather than each
+  /// starting their own.
+  ///
+  /// Known, accepted limitation (not fixed here, matches the exact
+  /// approach specified): if _loadOrCreate() ever throws, _future
+  /// caches as a failed Future and every subsequent call repeats that
+  /// same failure — there's no retry.
+  static Future<String>? _future;
+
+  static Future<String> get() {
+    return _future ??= _loadOrCreate();
+  }
+
+  static Future<String> _loadOrCreate() async {
     final existing = await _storage.read(key: _key);
     if (existing != null) return existing;
 

@@ -26,7 +26,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   String? _accountId;
   String? _categoryId;
   late DateTime _occurredAt;
-  bool _isRecurring = false;
   bool _saving = false;
 
   @override
@@ -40,7 +39,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     _accountId = existing?.accountId;
     _categoryId = existing?.categoryId;
     _occurredAt = existing?.occurredAt ?? DateTime.now();
-    _isRecurring = existing?.isRecurring ?? false;
   }
 
   @override
@@ -177,14 +175,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         maxLines: 2,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Recurring'),
-                        subtitle: const Text('Just a label for now — no auto-repeat yet'),
-                        value: _isRecurring,
-                        onChanged: (v) => setState(() => _isRecurring = v),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
                       FilledButton(
                         onPressed: _saving ? null : () => _save(effectiveAccountId, effectiveCategoryId, derivedKind),
                         child: Text(_saving ? 'Saving…' : (isEdit ? 'Save' : 'Add transaction')),
@@ -244,7 +234,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         type: derivedKind,
         note: note,
         occurredAt: _occurredAt,
-        isRecurring: _isRecurring,
+        isRecurring: false,
       );
     } else {
       await db.updateTransaction(
@@ -255,7 +245,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         type: derivedKind,
         note: note,
         occurredAt: _occurredAt,
-        isRecurring: _isRecurring,
+        isRecurring: false,
       );
     }
 

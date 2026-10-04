@@ -34,6 +34,7 @@ extension TransactionsDao on AppDatabase {
     required String note,
     required DateTime occurredAt,
     required bool isRecurring,
+    String? recurringRuleId,
   }) async {
     final id = generateId();
     await into(transactions).insert(
@@ -47,6 +48,7 @@ extension TransactionsDao on AppDatabase {
         note: Value(note),
         occurredAt: occurredAt,
         isRecurring: Value(isRecurring),
+        recurringRuleId: Value(recurringRuleId),
       ),
     );
     return id;

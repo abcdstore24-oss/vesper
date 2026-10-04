@@ -6,6 +6,7 @@ import '../../../core/db/db_provider.dart';
 import '../../../core/services/local_user_id.dart';
 import '../domain/account_type.dart';
 import 'transactions_dao.dart'; // NEW — countTransactionsForAccount + AccountHasTransactionsException
+import 'recurring_rules_dao.dart';
 
 extension AccountsDao on AppDatabase {
   Stream<List<AccountRow>> watchAccounts(String userId) {
@@ -55,10 +56,20 @@ extension AccountsDao on AppDatabase {
   /// Blocks deletion if any transaction still references this account
   /// — throws AccountHasTransactionsException rather than deleting.
   /// See task response for the block-vs-orphan reasoning.
+    /// CHANGED this task: also blocks on recurring rules referencing
+  /// this account — found during design (task response). Without
+  /// this, deleting an account a rule still references would let
+  /// generated transactions reference a nonexistent account, silently
+  /// excluded from every balance calculation — real money
+  /// disappearing from totals, not just a UI glitch.
   Future<void> deleteAccount(String id) async {
-    final count = await countTransactionsForAccount(id);
-    if (count > 0) {
-      throw AccountHasTransactionsException(count);
+    final transactionCount = await countTransactionsForAccount(id);
+    if (transactionCount > 0) {
+      throw AccountHasTransactionsException(transactionCount);
+    }
+    final ruleCount = await countRulesForAccount(id);
+    if (ruleCount > 0) {
+      throw AccountHasRecurringRuleException(ruleCount);
     }
     await (delete(accounts)..where((a) => a.id.equals(id))).go();
   }
