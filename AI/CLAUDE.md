@@ -162,7 +162,7 @@ docs when built.
   between themes, only color tokens do.
 
 ### Icons
-- `phosphoricons_flutter`, **regular weight** by default, **fill weight** for
+- `phosphor_flutter`, **regular weight** by default, **fill weight** for
   active/selected navigation states. No mixing with Material icons.
 
 ### Signature dashboard feature
