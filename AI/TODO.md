@@ -21,6 +21,7 @@ HANDOFF.md).
       caching behavior
 
 ## Phase 2 — Finance
+- [x] Money foundation — lib/core/utils/money.dart + tests (integer paise)
 - [ ] Accounts, categories, transactions tables + CRUD
 - [ ] Monthly summary view
 - [ ] Budget tracking

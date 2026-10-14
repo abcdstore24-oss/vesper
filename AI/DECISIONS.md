@@ -288,3 +288,21 @@ Confirmed working on-device: normal state, maintenance on/off with
 auto-recheck, kill switch on/off, offline-never-blocks, cached-block-
 persists-offline, kill-switch-bypasses-lock, light/dark rendering.
 **Phase 1 (Foundation) is now fully complete — see TODO.md.**
+
+### 2026-10-14 — Finance module ground rules (Phase 2)
+Money is stored as `int` paise (1 rupee = 100 paise), never double/decimal; INR only. Display is always exactly 2 decimals with Indian grouping (₹12,34,567.00) — never trimmed or rounded. Formatter/parser is hand-written in lib/core/utils/money.dart; `intl` deliberately not added (integer-only, stack unchanged).
+
+Balances are never stored — always computed from transactions: account balance = starting_balance + income − expense ± transfers; loan remaining = principal − repayments; investment holdings = buys − sells. Every money movement is a `transactions` row; loan payments, investment buys/sells and transfers create or link transactions tagged by source. Deleting the source deletes its transaction in one database transaction; the transactions screen blocks deleting a linked transaction directly. Transfers are a single row (type `transfer`, from/to account), not two rows.
+
+No net worth anywhere. Total balance appears on Accounts only; Finance home shows total balance and total investments as separate numbers. Loans are excluded from total balance and have their own "you'll receive" / "you owe" totals.
+
+Required baseline data (local user row, default categories, later modules' seeds) is created by one idempotent bootstrap when the database opens, before the first screen — never lazily when a feature is opened. Monthly recurring rules clamp to the month's last day (31st → 28/29/30).
+
+### 2026-10-14 — Money helper details (Phase 2, Task 1)
+Implemented in lib/core/utils/money.dart. Amounts are capped at
+Money.maxPaise = 10^14 paise (10^12 rupees); format() throws
+ArgumentError beyond it, parse() returns null. Input with more than 2
+decimals is rejected, never rounded. All money columns in DATABASE.md are
+integer paise (rule 5). Caveat: Karla's source font lacks the ₹ glyph
+(Fraunces has it); rendering in Karla text to be verified on-device, with
+a fallback of showing amounts in Fraunces if it looks mismatched.

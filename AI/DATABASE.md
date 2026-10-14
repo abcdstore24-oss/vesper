@@ -24,6 +24,11 @@ table must follow.
 4. Vault-related fields are marked **[ENCRYPTED]** below — these are
    encrypted client-side before ever touching local storage or sync;
    nothing server-side ever sees plaintext.
+5. **All money columns are stored as integer paise** (1 rupee = 100
+   paise): `amount`, `starting_balance`, `limit_amount`, `cost_basis`,
+   `current_value`, `est_price`, `saved_amount`, and any future money
+   field. Never REAL/double. Parse and display only via `Money`
+   (lib/core/utils/money.dart).
 
 ---
 
