@@ -1,9 +1,8 @@
 # TODO.md — Build Checklist
 
-Nothing has been built yet. This is the true starting point. Check items
-off as they're completed; when an AI session finishes a task, it should
-tell you what to check off rather than editing this file directly (see
-HANDOFF.md).
+Check items off as they're completed; when an AI session finishes a
+task, it should tell you what to check off rather than editing this
+file directly (see HANDOFF.md).
 
 ## Phase 1 — Foundation
 - [x] Design tokens: color palette (light/dark) + typography set up as
@@ -29,8 +28,12 @@ HANDOFF.md).
 - [x] Graphs/analytics (fl_chart)
 - [x] Dashboard: financial summary card wired to real data
 - [x] Recurring transactions engine
-- [ ] Loans & IOUs tracker — track money lent to or borrowed from
-      people, separate from Income/Expense
+- [x] Loans & IOUs tracker (core tracking, repayments, Net Worth inclusion)
+- [ ] Loan/investment categories excluded from monthly Income/Expense,
+      spending chart and budgets
+- [ ] Transaction rows: show the note as the title (cue for multi-line notes)
+- [ ] Transaction form: remove the time picker (date only, like other forms)
+- [ ] Finance folder cleanup: per-module subfolders (its own commit)
 
 ## Phase 3 — Vault / Notes / Documents
 - [ ] Vault setup flow, including recovery phrase generation/display

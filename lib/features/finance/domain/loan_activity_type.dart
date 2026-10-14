@@ -1,0 +1,4 @@
+enum LoanActivityType {
+  increase,
+  repayment;
+}

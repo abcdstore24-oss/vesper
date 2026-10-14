@@ -496,3 +496,31 @@ balances are explicitly NOT included in Net Worth/Charts/Summary in
 Part 1 — whether an amount owed TO you should count as an asset, and
 an amount you owe should count as a liability, is a real decision
 deferred to Part 2 once repayments exist to test against.
+
+### 2026-10-02 — Loans & IOUs: 3 bugs fixed, edit-consistency fix
+Found via real testing: (1) _save had no try/finally, so a failed save
+left the button stuck on "Saving..." forever; (2) the principal
+validator let NaN/Infinity through (NaN <= 0 is false in Dart, so the
+">0" check didn't catch it), causing a crash later; (3) deleteLoan
+used getSingle(), throwing a raw StateError on a double-tap delete
+instead of a clean no-op. All three fixed.
+
+Also fixed a real UX confusion: the list displays outstandingCents,
+but editing only ever changed principalCents — so editing a
+zero-activity loan's amount looked like nothing happened, even though
+it saved correctly. updateLoan now also updates outstandingCents when
+the loan has zero activity (outstanding still equals the original
+principal, not settled) — once real activity exists, principal
+becomes locked in the edit form entirely, since changing it after
+real repayment history begins would be ambiguous. Tested on-device:
+add/edit/delete all confirmed working, Net Worth/Charts/Summary
+unaffected by any loan at any point.
+
+### 2026-10-14 — Loans: stale-read and lock fixes after real testing
+The principal lock used a session-cached activity count, so principal
+stayed editable after a repayment; it is now autoDispose, and the DAO
+itself refuses to change principal or outstanding once activity
+exists, so a stale screen can't bypass it. Add more and Repayment
+re-read the loan inside their transaction instead of trusting the row
+the sheet opened with. Add more on a settled loan clears the Settled
+flag. Finance home and Loans now seed default categories themselves.

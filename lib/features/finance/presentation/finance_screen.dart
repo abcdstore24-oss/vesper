@@ -23,6 +23,10 @@ import 'recurring_screen.dart';
 import 'summary_page.dart';
 import 'transaction_form_sheet.dart';
 import 'transactions_screen.dart';
+import 'loans_screen.dart';
+import '../data/loans_dao.dart';
+
+
 
 /// CHANGED this task: ConsumerWidget -> ConsumerStatefulWidget, to add
 /// a WidgetsBindingObserver (Bug 1). No existing app-resume mechanism
@@ -64,6 +68,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(categoriesSeedProvider); // NEW: seeds defaults even if Categories was never opened
+
     // Bug 1, case (b): user switches TO the Finance tab. ref.listen,
     // not a side effect inside build() — this IS the listen call,
     // registered unconditionally every build, which is the correct
@@ -192,6 +198,15 @@ class _ManageSection extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const RecurringScreen()),
         ),
       ),
+      _ManageEntry(
+        icon: PhosphorIconsRegular.handshake,
+        title: 'Loans & IOUs',
+        subtitle: 'Money lent or borrowed',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LoansScreen()),
+        ),
+      ),
     ];
 
     final theme = Theme.of(context);
@@ -227,14 +242,15 @@ class _NetWorthGlanceCard extends ConsumerWidget {
     final accountsAsync = ref.watch(accountsProvider);
     final balancesAsync = ref.watch(accountBalancesProvider);
     final investmentsAsync = ref.watch(investmentsProvider);
+    final loansAsync = ref.watch(loansProvider); // NEW
 
     Widget body;
-    if (accountsAsync.hasError || balancesAsync.hasError || investmentsAsync.hasError) {
+    if (accountsAsync.hasError || balancesAsync.hasError || investmentsAsync.hasError || loansAsync.hasError) {
       body = Text(
         "Couldn't load",
         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       );
-    } else if (!accountsAsync.hasValue || !balancesAsync.hasValue || !investmentsAsync.hasValue) {
+    } else if (!accountsAsync.hasValue || !balancesAsync.hasValue || !investmentsAsync.hasValue || !loansAsync.hasValue) {
       body = const SizedBox(
         height: 24,
         child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))),
@@ -243,13 +259,18 @@ class _NetWorthGlanceCard extends ConsumerWidget {
       final accounts = accountsAsync.requireValue;
       final balances = balancesAsync.requireValue;
       final investments = investmentsAsync.requireValue;
-
+      final loansList = loansAsync.requireValue; // NEW
+      
       var totalCents = 0;
       for (final a in accounts) {
         totalCents += a.startingBalanceCents + (balances[a.id] ?? 0);
       }
       for (final inv in investments) {
         totalCents += inv.currentValueCents;
+      }
+      for (final loan in loansList) {
+        if (!loan.includeInNetWorth) continue; // NEW this task
+        totalCents += loan.direction == 'lent' ? loan.outstandingCents : -loan.outstandingCents;
       }
 
       final decimal = (totalCents.abs() / 100).toStringAsFixed(2);
@@ -302,6 +323,7 @@ class _NetWorthGlanceCard extends ConsumerWidget {
     );
   }
 }
+
 
 class _ThisMonthGlanceCard extends ConsumerWidget {
   const _ThisMonthGlanceCard();

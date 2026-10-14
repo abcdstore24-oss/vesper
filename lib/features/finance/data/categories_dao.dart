@@ -89,8 +89,15 @@ final categoriesSeedProvider = FutureProvider<void>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final userId = await LocalUserId.get();
   await db.seedDefaultCategoriesIfEmpty(userId);
-  await db.ensureInvestmentsCategoryExists(userId);
-  await db.ensureInvestmentPurchaseCategoryExists(userId); // NEW this task
+  // CHANGED this task: was two calls (ensureInvestmentsCategoryExists,
+  // ensureInvestmentPurchaseCategoryExists) — now six calls to the
+  // single consolidated function.
+  await db.ensureDefaultCategoryExists(userId, 'Investments');
+  await db.ensureDefaultCategoryExists(userId, 'Investment Purchase');
+  await db.ensureDefaultCategoryExists(userId, 'Loan Given');
+  await db.ensureDefaultCategoryExists(userId, 'Loan Taken');
+  await db.ensureDefaultCategoryExists(userId, 'Loan Repayment Received');
+  await db.ensureDefaultCategoryExists(userId, 'Loan Repayment Paid');
 });
 
 final categoriesProvider = StreamProvider<List<CategoryRow>>((ref) async* {

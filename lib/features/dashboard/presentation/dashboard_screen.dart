@@ -10,8 +10,10 @@ import '../../../shared/widgets/dashboard_card.dart';
 import '../../finance/data/accounts_dao.dart'; // NEW — cross-feature import, first instance in this project (see task response)
 import '../../finance/data/investments_dao.dart'; // NEW
 import '../../finance/data/transactions_dao.dart'; // NEW
+import '../../finance/data/loans_dao.dart'; // NEW
 import '../../settings/presentation/settings_screen.dart';
 import '../data/user_profile_dao.dart';
+
 
 /// Dashboard tab — CLAUDE.md Section 1, item 10.
 ///
@@ -164,6 +166,7 @@ class _FinancialSummaryCard extends ConsumerWidget {
     final accountsAsync = ref.watch(accountsProvider);
     final balancesAsync = ref.watch(accountBalancesProvider);
     final investmentsAsync = ref.watch(investmentsProvider);
+    final loansAsync = ref.watch(loansProvider); // NEW
     final now = DateTime.now();
     final summaryAsync = ref.watch(monthSummaryProvider((now.year, now.month)));
 
@@ -171,6 +174,7 @@ class _FinancialSummaryCard extends ConsumerWidget {
     if (accountsAsync.hasError ||
         balancesAsync.hasError ||
         investmentsAsync.hasError ||
+        loansAsync.hasError || // NEW
         summaryAsync.hasError) {
       body = Text(
         "Couldn't load financial data",
@@ -179,9 +183,8 @@ class _FinancialSummaryCard extends ConsumerWidget {
     } else if (!accountsAsync.hasValue ||
         !balancesAsync.hasValue ||
         !investmentsAsync.hasValue ||
+        !loansAsync.hasValue || // NEW
         !summaryAsync.hasValue) {
-      // No zero-fallback while loading — same discipline as every
-      // other screen in this project.
       body = const SizedBox(
         height: 32,
         child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))),
@@ -190,6 +193,7 @@ class _FinancialSummaryCard extends ConsumerWidget {
       final accounts = accountsAsync.requireValue;
       final balances = balancesAsync.requireValue;
       final investments = investmentsAsync.requireValue;
+      final loansList = loansAsync.requireValue; // NEW
       final summary = summaryAsync.requireValue;
 
       var netWorthCents = 0;
@@ -198,6 +202,10 @@ class _FinancialSummaryCard extends ConsumerWidget {
       }
       for (final inv in investments) {
         netWorthCents += inv.currentValueCents;
+      }
+      for (final loan in loansList) {
+        if (!loan.includeInNetWorth) continue; // NEW this task — identical to finance_screen.dart's addition
+        netWorthCents += loan.direction == 'lent' ? loan.outstandingCents : -loan.outstandingCents;
       }
 
       final netWorthDecimal = (netWorthCents.abs() / 100).toStringAsFixed(2);
@@ -287,8 +295,6 @@ class _FinancialSummaryCard extends ConsumerWidget {
     }
 
     return InkWell(
-      // Same existing mechanism the bottom NavigationBar itself uses
-      // — not a new navigation pattern (task response).
       onTap: () => ref.read(navIndexProvider.notifier).setIndex(1),
       borderRadius: BorderRadius.circular(AppRadius.card),
       child: DashboardCard(
