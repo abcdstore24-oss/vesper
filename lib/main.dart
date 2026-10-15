@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app_shell.dart';
+import 'core/db/db_bootstrap.dart';
 import 'core/db/db_provider.dart';
 import 'core/services/app_lock_provider.dart';
 import 'core/services/remote_status_provider.dart';
@@ -28,6 +29,12 @@ Future<void> main() async {
   // for a frame.
   final container = ProviderContainer();
   final db = container.read(appDatabaseProvider);
+
+  // Baseline data (local user row + default categories) must exist before
+  // any provider reads data, so nothing ever seeds lazily later. See
+  // core/db/db_bootstrap.dart.
+  await ensureBaselineData(db);
+
   final cachedRow = await db.getRemoteStatusOnce();
   EffectiveRemoteStatusNotifier.initialStatus = cachedRow == null
       ? EffectiveRemoteStatus.open

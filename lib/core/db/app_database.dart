@@ -7,6 +7,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../features/finance/data/categories_table.dart';
+
 part 'app_database.g.dart';
 
 /// Generates a random, UUID-v4-*shaped* identifier without depending on
@@ -105,12 +107,34 @@ class RemoteStatusCache extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [UserProfile, RemoteStatusCache])
+@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Categories])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  /// [executor] is for tests (e.g. `NativeDatabase.memory()`); the app
+  /// always calls `AppDatabase()` and gets the encrypted on-disk database.
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
+
+  /// v1: user_profile, remote_status_cache.
+  /// v2: + categories (Phase 2, Task 2).
+  @override
+  int get schemaVersion => 2;
 
   @override
-  int get schemaVersion => 1;
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      // Additive only: existing tables and rows are not touched.
+      if (from < 2) {
+        await m.createTable(categories);
+        // createTable does not create the table's indexes.
+        for (final entity in allSchemaEntities) {
+          if (entity is Index &&
+              entity.entityName == 'categories_user_kind_idx') {
+            await m.createIndex(entity);
+          }
+        }
+      }
+    },
+  );
 }
 
 LazyDatabase _openConnection() {

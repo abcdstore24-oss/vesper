@@ -306,3 +306,33 @@ decimals is rejected, never rounded. All money columns in DATABASE.md are
 integer paise (rule 5). Caveat: Karla's source font lacks the ₹ glyph
 (Fraunces has it); rendering in Karla text to be verified on-device, with
 a fallback of showing amounts in Fraunces if it looks mismatched.
+
+### 2026-10-15 — Startup bootstrap + categories (Phase 2, Task 2a)
+Added `categories` (local schema v2; additive migration creates the table
+and its (user_id, kind) index, existing data untouched) and
+core/db/db_bootstrap.dart `ensureBaselineData(db)`, awaited in main()
+before runApp and before any provider reads data. It (1) ensures the
+device-local user_profile row exists (nothing created it before), then (2)
+runs registered seeders in one transaction; later modules add their seeder
+to `baselineSeeders`. The local user id is user_profile.user_id (a
+generateId() value). This guarantees a user_id exists before any
+user-scoped insert, removing one plausible class of the earlier "account
+didn't appear on first launch" bug (the old code is gone, so the actual
+cause is unconfirmed; any list that doesn't refresh after its first insert
+is the other suspect and gets its own test in the Accounts task).
+Default categories are keyed by seed_key with insert-or-ignore on
+UNIQUE(user_id, seed_key); rows are never deleted, so renamed/archived
+built-ins are never recreated. categories.user_id is NOT NULL (a NULL would
+defeat the unique key). user_profile is a single row: any future code that
+saves name/birthdate must UPDATE that row, never insert a second one.
+Failure policy: rethrow in debug; in release swallow and retry next start,
+no logging. AppDatabase accepts an optional QueryExecutor for in-memory
+tests. CategoriesDao is a plain class with no update/delete. Data export
+needed no change (it iterates allTables).
+
+### 2026-10-15 — System categories implemented (Phase 2, Task 2b)
+CategoryKind gains `system` (stored by name, no CHECK, schema stays v2). Six
+sys_* categories seeded in grey 0xFF9C95A8; existing installs gain them on
+next start via the insert-or-ignore seeder (original 20 rows untouched).
+CategoriesDao gains getBySeedKey(userId, seedKey). Downgrading to an older
+build over a newer database is unsupported (it would throw on 'system').

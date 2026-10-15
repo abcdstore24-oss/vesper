@@ -22,6 +22,8 @@ HANDOFF.md).
 
 ## Phase 2 — Finance
 - [x] Money foundation — lib/core/utils/money.dart + tests (integer paise)
+- [x] Categories table + startup bootstrap (local user row + default categories) - 2a
+- [x] System categories for loans/investments (kind=system, 6 seeded) - 2b
 - [ ] Accounts, categories, transactions tables + CRUD
 - [ ] Monthly summary view
 - [ ] Budget tracking
