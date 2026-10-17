@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../features/finance/data/accounts_table.dart';
 import '../../features/finance/data/categories_table.dart';
 
 part 'app_database.g.dart';
@@ -107,7 +108,7 @@ class RemoteStatusCache extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Categories])
+@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Categories, Accounts])
 class AppDatabase extends _$AppDatabase {
   /// [executor] is for tests (e.g. `NativeDatabase.memory()`); the app
   /// always calls `AppDatabase()` and gets the encrypted on-disk database.
@@ -115,26 +116,36 @@ class AppDatabase extends _$AppDatabase {
 
   /// v1: user_profile, remote_status_cache.
   /// v2: + categories (Phase 2, Task 2).
+  /// v3: + accounts (Phase 2, Task 3a).
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async => m.createAll(),
     onUpgrade: (m, from, to) async {
-      // Additive only: existing tables and rows are not touched.
+      // Additive only: existing tables and rows are not touched. Each step
+      // runs when upgrading from any version below it, so a v1 install
+      // gets both.
       if (from < 2) {
         await m.createTable(categories);
-        // createTable does not create the table's indexes.
-        for (final entity in allSchemaEntities) {
-          if (entity is Index &&
-              entity.entityName == 'categories_user_kind_idx') {
-            await m.createIndex(entity);
-          }
-        }
+        await _createIndexNamed(m, 'categories_user_kind_idx');
+      }
+      if (from < 3) {
+        await m.createTable(accounts);
+        await _createIndexNamed(m, 'accounts_user_idx');
       }
     },
   );
+
+  /// createTable does not create a table's indexes, so create them here.
+  Future<void> _createIndexNamed(Migrator m, String name) async {
+    for (final entity in allSchemaEntities) {
+      if (entity is Index && entity.entityName == name) {
+        await m.createIndex(entity);
+      }
+    }
+  }
 }
 
 LazyDatabase _openConnection() {

@@ -16,11 +16,11 @@ table must follow.
 2. **No global/unscoped tables.** Anything that looks like shared config
    (categories, tags, settings) is still per-`user_id`, not a single
    shared row.
-3. Every table has: `id` (UUID, primary key), `user_id` (UUID, foreign
-   key to the user — nullable locally when no account exists yet, backed
-   by a local device-generated UUID until/unless an account is created
-   and data is migrated to a real `auth.users.id`), `created_at`,
-   `updated_at`.
+3. Every table has: `id` (UUID, primary key), `user_id` (UUID — the
+   device-local user id created by the startup bootstrap, later migrated to
+   a real `auth.users.id` if an account is created; Finance tables declare
+   it NOT NULL because the bootstrap guarantees it exists; only
+   `user_profile` keeps it nullable), `created_at`, `updated_at`.
 4. Vault-related fields are marked **[ENCRYPTED]** below — these are
    encrypted client-side before ever touching local storage or sync;
    nothing server-side ever sees plaintext.
@@ -33,13 +33,42 @@ table must follow.
 ---
 
 ## Finance
-- `accounts` (id, user_id, name, type, currency, starting_balance)
-- `transactions` (id, user_id, account_id, category_id, amount,
-  type[income/expense], note, occurred_at, is_recurring)
-- `categories` (id, user_id, name, icon, color, kind[income/expense])
+- `accounts` (id, user_id NOT NULL, name [trimmed, 1–40 chars, unique per
+  user ignoring case — enforced in AccountsDao], type [cash/bank/wallet/
+  creditCard/other, stored by name, no CHECK], currency [default 'INR'],
+  starting_balance [integer paise, may be negative, |v| <= Money.maxPaise
+  enforced in AccountsDao], is_archived [default false], created_at,
+  updated_at). Index (user_id). Local schema v3. Balance is never stored:
+  computed in account_balance.dart. Total Balance excludes credit-card
+  accounts; they are shown separately as "card dues" (see DECISIONS.md).
+- `categories` (id, user_id NOT NULL, name, icon [Phosphor key, snake_case],
+  color [int 0xFFRRGGBB; defaults defined in category_seeder.dart],
+  kind [income/expense/system, stored by name, no CHECK], seed_key
+  [nullable; stable id for built-in categories, NULL for user-made],
+  is_archived [default false], created_at, updated_at). UNIQUE (user_id,
+  seed_key); index (user_id, kind). Built-ins may be renamed/archived,
+  never deleted. `system` categories (seed_key sys_*) label loan/investment
+  money movements: never user-pickable, never counted as income/expense,
+  never in budgets or charts. Seeded: sys_loan_given,
+  sys_loan_repayment_received, sys_loan_taken, sys_loan_repayment_made,
+  sys_investment_buy, sys_investment_sell. Local schema v2.
+- `transactions` (PLANNED, finalized in Task 4: id, user_id NOT NULL,
+  account_id, to_account_id [transfers only], category_id [nullable; none
+  for transfers], amount [integer paise, always > 0; direction comes from
+  type], type [income/expense/transfer], note, occurred_at, source_type +
+  source_id [nullable; set ONLY when a loan payment or investment trade
+  created it — recurring-generated transactions count normally and get
+  their own link in the Recurring task], created_at, updated_at)
 - `budgets` (id, user_id, category_id, month, limit_amount)
-- `investments` (id, user_id, name, type, quantity, cost_basis,
-  current_value, last_updated_at)
+- `investments` (PLANNED — redesigned in the Investments task: an
+  investment plus a trade history of buys/sells, each with quantity, price,
+  the account used, and for sales the amount typed by the user. Holdings,
+  cost basis and realized gain are computed from the trades, never stored.
+  The old single-row shape with quantity/cost_basis/current_value is
+  superseded.)
+- `loans`, `loan_payments` (PLANNED — Loans task: a loan is "given" or
+  "taken" with a person and principal; each payment can create a linked
+  transaction. Remaining = principal − payments, never stored.)
 
 ## Vault (zero-knowledge)
 - `vault_items` (id, user_id, item_type[credential/note/document_ref],
@@ -108,6 +137,7 @@ export.
 - `user_profile` (id, user_id, display_name, birthdate — the source for
   the dashboard's age/days-to-birthday feature, theme_preference,
   app_lock_mode[os/pin/off])
+  Single row only: profile edits UPDATE it, never insert a second.
 - `remote_status_cache` (id, last_checked_at, maintenance_mode,
   maintenance_message, kill_switch, last_known_good) — this one is
   intentionally **not** user-scoped in the same way; it mirrors the

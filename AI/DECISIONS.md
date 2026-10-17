@@ -336,3 +336,107 @@ sys_* categories seeded in grey 0xFF9C95A8; existing installs gain them on
 next start via the insert-or-ignore seeder (original 20 rows untouched).
 CategoriesDao gains getBySeedKey(userId, seedKey). Downgrading to an older
 build over a newer database is unsupported (it would throw on 'system').
+
+### 2026-10-15 — System categories; what counts as income/expense (Phase 2)
+Loan and investment money movements get categories but are NOT income or
+expense. CategoryKind gains `system` (stored by name; no migration). Six
+seeded system categories: Loan given, Repayment received, Loan taken, Loan
+repayment made, Investment purchase, Investment sale. Pickers and budgets
+only query income/expense kinds, so system categories never appear there.
+Transactions created by a loan payment or investment buy/sell carry
+source_type/source_id; the monthly summary, budgets and charts count only
+transactions with no source. System transactions still move account balances
+and appear in the transaction list. Transfers have no category. Investment
+sale gains/losses are shown on the Investments screen, not counted as
+income; user-logged dividends are normal income.
+
+### 2026-10-15 — Accounts, local user id provider, balances (Phase 2, Task 3a)
+Local schema v3: additive migration adds `accounts` + accounts_user_idx
+(onUpgrade runs `from < 2` and `from < 3`, indexes created explicitly).
+localUserIdProvider (FutureProvider) returns ensureLocalUser(db) —
+idempotent, so it works even if the startup bootstrap failed silently.
+accountsWithBalanceProvider awaits that id and yield*s the DAO stream;
+totalBalanceProvider derives from it. Balances are never stored; the single
+calculation is computeBalancePaise in account_balance.dart, where Task 4
+adds transaction sums. Account names are trimmed, 1–40 characters, unique
+per user ignoring case (checked in the DAO, in Dart, because SQLite's
+lower() is ASCII-only; archived names stay reserved). Typed
+AccountValidationException for name errors; ArgumentError for
+|starting_balance| > Money.maxPaise. No delete/archive method yet.
+The earlier "account didn't appear on first launch" bug now has a
+regression test (fresh database, no bootstrap, one container, one
+listener, two inserts). Caveat: created_at has one-second resolution, so
+accounts created in the same second sort by name.
+
+### 2026-10-15 — Credit cards are not part of Total Balance (Phase 2, Task 3a-2)
+Total Balance = non-archived accounts of type cash/bank/wallet/other only
+(money the user has). Credit-card accounts are excluded and shown
+separately as "Card dues" = -(sum of non-archived credit-card balances);
+positive = owed, negative = overpaid credit. Reason: including a card's
+negative balance made the headline a net-worth-style number (Rs 10,000 in
+bank + Rs 12,000 owed = -Rs 2,000), which the owner rejected. Paying a card
+bill is a transfer from the paying account to the card account, so it is
+never counted as spending twice. Supersedes the total-balance wording in the
+Task 3a entry.
+
+### 2026-10-16 — Card dues are never netted (Phase 2, Task 3a-3)
+creditCardDuesPaise = sum over non-archived credit-card accounts of
+max(0, -balance): what is owed, per card, never negative. An overpaid or
+paid-up card adds nothing and never offsets another card's debt (the old
+netting hid real debt: +5000 and -3000 showed -2000). An overpaid card's
+credit is shown on that card's own row later, not in dues. The sum can
+exceed Money.maxPaise (e.g. maxPaise + 1); it stays exact and the UI
+handles the display limit. Total Balance is unchanged (cash, bank, wallet,
+other; no cards, no archived).
+Supersedes the dues formula (and the "negative = overpaid" wording) in the
+Task 3a-2 entry; Total Balance is unaffected.
+
+### 2026-10-16 — Finance UI choices (Phase 2, Task 3b)
+Theme: outlineVariant = border (the old near-white fallback caused bright
+dividers), dividerTheme, bottomSheetTheme (surface, drag handle, 20px top
+corners) and chipTheme (pill, border, no checkmark) added — tokens only.
+This also restyles the existing Settings sheets. Money on screen goes
+through AmountText (single line, scale down, never truncated; "Amount too
+large" past Money.maxPaise). Total balance and Card dues share BalanceSummary
+(one card without active credit cards, two equal cards with). While loading
+a spinner is shown, never a fake 0. Card rows show the owed amount positive
+with "due" (negative cards) or "credit" (overpaid). Every account row
+reserves a caption line so row heights match. Add/edit sheet: card amount is
+typed as "Amount owed" and stored negative; amounts are parsed only with
+Money.parse; editing only updates the balance if the amount was edited or the
+card/non-card meaning changed; double-tap Save is guarded. Known edge: switching
+a card to a non-card with the text untouched flips its sign (per the "keep the
+typed text" rule). The row icon circle takes surfaceVariant from AppColors
+because ColorScheme.surfaceVariant is deprecated. Cards keep the theme's
+default 4px margin, like the Dashboard.
+Widget tests build AppTheme inside tests, never at file load time. google_fonts 
+runs with runtime fetching off, so Karla and Fraunces fall back to the test font, 
+and layout tests are deliberately pessimistic.
+Verified on a real Android device 2026-10-16: fresh install, accounts appear 
+immediately; the + button doesn’t cover the last row.
+Supersedes "Total balance appears on Accounts only" in the 2026-10-14 ground
+rules: it also appears on the Finance home (shared BalanceSummary).
+
+### 2026-10-16 — Comma safety in Money.parse + edit type-switch rule (Task 3b-2)
+Money.parse used to ignore commas anywhere, so "12,50" became ₹1,250.00 (a
+silent 100x error). If the whole-number part contains ANY comma it must be
+valid Western grouping (1,250  100,000  1,234,567) or valid Indian grouping
+(1,250  12,34,567  1,00,00,000), checked on the raw text before the commas
+are removed; otherwise parse returns null (the form shows its normal amount
+error). Money.format always produces valid Indian grouping, so prefills and
+round trips are unaffected; trailing and doubled commas are now rejected too.
+Edit sheet: switching between card and non-card with an untouched amount
+re-renders the field from the STORED balance in the new meaning (a card that
+owed 1200.50 becomes Bank "-1,200.50"; Bank -500 becomes card "500.00"), so a
+balance never flips sign by accident. Switching a non-card account with a
+zero/positive balance to a card clears the field and Save asks for the amount
+owed (0 if none) until the user types. Switching back restores the original
+prefill. A touched field keeps the typed text. The balance is only written when
+the amount field was typed in. Captions: the total card says "No accounts yet"
+only with no active cards, otherwise "0 accounts"; the Accounts empty-state
+title is "Add your first account".
+Supersedes the "Known edge" sentence in the Task 3b entry. Consequence of
+"a touched field keeps the typed text": if the user types an amount and THEN
+switches between card and non-card, the number stays but its meaning changes
+with the label (owed 77 becomes balance +77). A zero-balance Bank account
+switched to Credit card makes the user type 0.

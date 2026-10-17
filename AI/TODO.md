@@ -24,12 +24,19 @@ HANDOFF.md).
 - [x] Money foundation — lib/core/utils/money.dart + tests (integer paise)
 - [x] Categories table + startup bootstrap (local user row + default categories) - 2a
 - [x] System categories for loans/investments (kind=system, 6 seeded) - 2b
-- [ ] Accounts, categories, transactions tables + CRUD
+- [x] Local user id provider + accounts table + DAO + balance stream - 3a
+- [x] Credit cards excluded from Total Balance; card dues shown separately - 3a
+- [x] Card dues count only what is owed, never netted across cards - 3a
+- [x] Finance home, Accounts screen, add/edit account sheet, theme fixes - 3b
+- [x] Comma safety in Money.parse, edit type-switch fix, captions - 3b-2
+- [ ] Transactions (table, balances, add/edit/delete, list, transfers)
 - [ ] Monthly summary view
 - [ ] Budget tracking
 - [ ] Investment tracking
 - [ ] Graphs/analytics (fl_chart)
 - [ ] Dashboard: financial summary card wired to real data
+- [ ] Optional: selectable, animated money view (accounts / investments / loans / card dues) — after Loans + Investments
+  (supersedes "no net worth" in DECISIONS.md when built)
 
 ## Phase 3 — Vault / Notes / Documents
 - [ ] Vault setup flow, including recovery phrase generation/display

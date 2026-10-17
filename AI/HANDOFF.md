@@ -44,6 +44,13 @@ this order:
   afterward, including a verification query I can run to confirm RLS/
   grants are actually correct — not just "looks right in the
   dashboard."
+- Never weaken, delete or skip a test to make it pass. If a test fails, find
+  the cause and report it. Fix the test only when the test itself is wrong,
+  and say why.
+- All money is integer paise handled only through Money (lib/core/utils/
+  money.dart); never double/num.
+- Widget tests use test/support/ui_test_helpers.dart (see COMPONENTS.md);
+  build AppTheme inside test bodies, never at file load time.
 
 **My task for this session:**
 

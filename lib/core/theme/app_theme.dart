@@ -42,6 +42,34 @@ class AppTheme {
       primaryTextTheme: textTheme,
       dividerColor: c.border,
 
+      // Task 3b theme fixes. Tokens only: every value below is an
+      // existing AppColors / AppRadius / AppTypography token.
+
+      // Unset, Divider falls back to colorScheme.outlineVariant, which
+      // used to be near-white (the bright dividers).
+      dividerTheme: DividerThemeData(color: c.border, thickness: 1, space: 1),
+
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.surface,
+        modalBackgroundColor: c.surface,
+        surfaceTintColor: Colors.transparent,
+        showDragHandle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.card),
+          ),
+        ),
+      ),
+
+      chipTheme: ChipThemeData(
+        backgroundColor: c.surfaceVariant,
+        selectedColor: c.accent.withValues(alpha: 0.18),
+        side: BorderSide(color: c.border),
+        shape: const StadiumBorder(),
+        labelStyle: AppTypography.labelLarge.copyWith(color: c.textPrimary),
+        showCheckmark: false,
+      ),
+
       appBarTheme: AppBarTheme(
         backgroundColor: c.background,
         foregroundColor: c.textPrimary,
@@ -192,6 +220,8 @@ class AppTheme {
       surfaceVariant: c.surfaceVariant,
       onSurfaceVariant: c.textSecondary,
       outline: c.border,
+      // Unset, Material falls back to a near-white colour (bright dividers).
+      outlineVariant: c.border,
     );
   }
 

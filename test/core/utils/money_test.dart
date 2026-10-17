@@ -183,6 +183,67 @@ void main() {
     });
   });
 
+  group('comma grouping', () {
+    test('accepts valid Western and Indian grouping', () {
+      expect(Money.parse('1,250'), 125000);
+      expect(Money.parse('12,34,567.89'), 123456789);
+      expect(Money.parse('1,234,567'), 123456700);
+      expect(Money.parse('100,000'), 10000000);
+      expect(Money.parse('1,00,000'), 10000000);
+      expect(Money.parse('1,23,456'), 12345600);
+      expect(Money.parse('1,00,00,000'), 1000000000);
+      expect(Money.parse('$r 1,250.50'), 125050);
+      expect(Money.parse('-1,250', allowNegative: true), -125000);
+    });
+
+    test('rejects commas in the wrong places', () {
+      // "12,50" used to parse as 1250 rupees: a silent 100x error.
+      for (final bad in [
+        '12,50',
+        '1,2,3',
+        '123,45,678',
+        '1,23',
+        '1,2345',
+        ',123',
+        '12,34,56',
+        '1,234,56',
+      ]) {
+        expect(Money.parse(bad), isNull, reason: bad);
+        expect(Money.parse('$bad.50'), isNull, reason: '$bad.50');
+      }
+    });
+
+    test('other comma slips are rejected too', () {
+      expect(Money.parse('1,250,'), isNull);
+      expect(Money.parse('1,,250'), isNull);
+      expect(Money.parse('12,3'), isNull);
+      expect(Money.parse('1,25,0'), isNull);
+      expect(Money.parse('-12,50', allowNegative: true), isNull);
+      expect(Money.parse('$r 12,50'), isNull);
+    });
+
+    test('without commas nothing changes', () {
+      expect(Money.parse('1250'), 125000);
+      expect(Money.parse('1250.5'), 125050);
+      expect(Money.parse('123456789'), 12345678900);
+    });
+
+    test('everything format() produces parses back', () {
+      for (final v in [
+        1000,
+        99900,
+        100000,
+        12345678,
+        999999900,
+        1000000000,
+        100000000000,
+        Money.maxPaise,
+      ]) {
+        expect(Money.parse(Money.format(v, symbol: false)), v);
+      }
+    });
+  });
+
   group('round trip', () {
     int roundTrip(int x) {
       final int? back = Money.parse(

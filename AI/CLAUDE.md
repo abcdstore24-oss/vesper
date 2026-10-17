@@ -1,10 +1,6 @@
 # CLAUDE.md — Project Source of Truth
 
-**Status:** Locked. This file, along with DECISIONS.md, DATABASE.md,
-API.md, TODO.md, and COMPONENTS.md, is the single source of truth for
-this project. Any AI session working on this project must read all six
-files before writing code. Do not reinterpret or "improve" decisions
-recorded here without the owner's explicit permission.
+**Status:** Locked. This file, along with DECISIONS.md, DATABASE.md, SUPABASE.md, API.md, TODO.md, and COMPONENTS.md, is the single source of truth for this project. Any AI session working on this project must read all seven files (plus HANDOFF.md, which says how to work) before writing code.
 
 ---
 
@@ -162,7 +158,7 @@ docs when built.
   between themes, only color tokens do.
 
 ### Icons
-- `phosphor_flutter`, **regular weight** by default, **fill weight** for
+- `phosphoricons_flutter`, **regular weight** by default, **fill weight** for
   active/selected navigation states. No mixing with Material icons.
 
 ### Signature dashboard feature

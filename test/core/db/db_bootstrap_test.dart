@@ -499,8 +499,8 @@ void main() {
     });
   });
 
-  group('migration v1 -> v2', () {
-    test('adds categories and index, keeps existing data', () async {
+  group('migration v1 -> v3', () {
+    test('adds categories + accounts and their indexes, keeps existing data', () async {
       await db.close(); // replace the default per-test database
 
       db = AppDatabase(
@@ -566,6 +566,18 @@ void main() {
       final names = schema.map((r) => r.read<String>('name')).toSet();
       expect(names, contains('categories'));
       expect(names, contains('categories_user_kind_idx'));
+
+      // A v1 install passes through BOTH upgrade steps (from < 2, from < 3).
+      final allNames = (await db
+              .customSelect('SELECT name FROM sqlite_master')
+              .get())
+          .map((r) => r.read<String>('name'))
+          .toSet();
+      expect(allNames, containsAll(['accounts', 'accounts_user_idx']));
+      expect(await db.select(db.accounts).get(), isEmpty);
+
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
+      expect(version.read<int>('user_version'), 3);
     });
   });
 

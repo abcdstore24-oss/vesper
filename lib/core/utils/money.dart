@@ -15,6 +15,13 @@ abstract final class Money {
   // maxPaise ~/ 100 is 10^12 rupees, which has 13 digits.
   static const int _maxRupeeDigits = 13;
 
+  // The only comma layouts parse() accepts in the whole-number part, checked
+  // on the raw text BEFORE the commas are removed. Western: 1,250  100,000
+  // 1,234,567. Indian: 1,250  12,34,567  1,00,00,000. Anything else (for
+  // example "12,50", read as 1250 rupees) is a likely typo and is rejected.
+  static final RegExp _westernGrouping = RegExp(r'^\d{1,3}(,\d{3})+$');
+  static final RegExp _indianGrouping = RegExp(r'^\d{1,2}(,\d{2})*,\d{3}$');
+
   /// Formats [paise] as Indian-grouped rupees with exactly 2 decimals.
   ///
   /// Throws [ArgumentError] if [paise] is outside -maxPaise..maxPaise.
@@ -49,10 +56,12 @@ abstract final class Money {
   /// Parses user input into paise, or returns null if it is invalid.
   ///
   /// Accepts, in this order: optional "-" (only when [allowNegative]),
-  /// optional rupee sign, optional spaces, then digits with optional commas
-  /// in the whole-number part (comma positions are not validated), at most
-  /// one ".", and 0-2 digits after it. Anything else returns null, including
-  /// 3+ decimals and any amount beyond [maxPaise].
+  /// optional rupee sign, optional spaces, then digits, at most one ".", and
+  /// 0-2 digits after it. If the whole-number part contains ANY comma, it must
+  /// be valid Western grouping (1,250  100,000  1,234,567) or valid Indian
+  /// grouping (1,250  12,34,567  1,00,00,000); otherwise the result is null.
+  /// Commas after the "." are never allowed. Anything else returns null,
+  /// including 3+ decimals and any amount beyond [maxPaise].
   static int? parse(String input, {bool allowNegative = false}) {
     String s = input.trim();
 
@@ -70,6 +79,9 @@ abstract final class Money {
     if (s.isEmpty) return null;
 
     final StringBuffer wholeBuf = StringBuffer();
+    // The whole-number text exactly as typed (digits AND commas), so the
+    // comma layout can be checked.
+    final StringBuffer wholeRaw = StringBuffer();
     final StringBuffer fracBuf = StringBuffer();
     bool seenDot = false;
     bool seenComma = false;
@@ -82,11 +94,13 @@ abstract final class Money {
           fracBuf.writeCharCode(c);
         } else {
           wholeBuf.writeCharCode(c);
+          wholeRaw.writeCharCode(c);
         }
       } else if (c == 0x2C) {
         // Comma: allowed in the whole-number part only.
         if (seenDot) return null;
         seenComma = true;
+        wholeRaw.writeCharCode(c);
       } else if (c == 0x2E) {
         // Dot: at most one.
         if (seenDot) return null;
@@ -97,9 +111,17 @@ abstract final class Money {
       }
     }
 
-    // Need at least one digit somewhere, and commas need a digit beside them.
+    // Need at least one digit somewhere.
     if (wholeBuf.isEmpty && fracBuf.isEmpty) return null;
-    if (seenComma && wholeBuf.isEmpty) return null;
+
+    // Any comma must form valid Western or Indian grouping. This also
+    // rejects a leading/trailing comma and commas with no digits.
+    if (seenComma) {
+      final String raw = wholeRaw.toString();
+      if (!_westernGrouping.hasMatch(raw) && !_indianGrouping.hasMatch(raw)) {
+        return null;
+      }
+    }
 
     // Drop leading zeros so the length check below is exact.
     String whole = wholeBuf.toString();
