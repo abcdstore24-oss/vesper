@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../features/finance/data/accounts_table.dart';
 import '../../features/finance/data/categories_table.dart';
+import '../../features/finance/data/transactions_table.dart';
 
 part 'app_database.g.dart';
 
@@ -108,7 +109,9 @@ class RemoteStatusCache extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [UserProfile, RemoteStatusCache, Categories, Accounts])
+@DriftDatabase(
+  tables: [UserProfile, RemoteStatusCache, Categories, Accounts, Transactions],
+)
 class AppDatabase extends _$AppDatabase {
   /// [executor] is for tests (e.g. `NativeDatabase.memory()`); the app
   /// always calls `AppDatabase()` and gets the encrypted on-disk database.
@@ -117,8 +120,9 @@ class AppDatabase extends _$AppDatabase {
   /// v1: user_profile, remote_status_cache.
   /// v2: + categories (Phase 2, Task 2).
   /// v3: + accounts (Phase 2, Task 3a).
+  /// v4: + transactions (Phase 2, Task 4a).
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -126,7 +130,7 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) async {
       // Additive only: existing tables and rows are not touched. Each step
       // runs when upgrading from any version below it, so a v1 install
-      // gets both.
+      // gets all of them.
       if (from < 2) {
         await m.createTable(categories);
         await _createIndexNamed(m, 'categories_user_kind_idx');
@@ -134,6 +138,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         await m.createTable(accounts);
         await _createIndexNamed(m, 'accounts_user_idx');
+      }
+      if (from < 4) {
+        await m.createTable(transactions);
+        await _createIndexNamed(m, 'transactions_user_date_idx');
+        await _createIndexNamed(m, 'transactions_account_idx');
       }
     },
   );

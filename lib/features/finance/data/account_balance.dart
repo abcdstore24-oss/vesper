@@ -13,16 +13,31 @@ class AccountWithBalance {
 // BALANCE CALCULATION — the ONE place an account balance is computed.
 //
 // A balance is ALWAYS computed, never stored (DECISIONS.md: balance =
-// starting_balance + income - expense +/- transfers).
+// starting_balance + income - expense + transfers in - transfers out).
 //
-// TODO(Task 4): transactions don't exist yet, so today the balance is just
-// the starting balance. When the transactions table lands, add the
-// per-account sums (income, expense, transfers in/out) as extra named
-// parameters HERE and fold them into the result. Nothing else in the app
-// should compute a balance.
+// The per-account sums come from SQL (balance_queries.dart); this function
+// is the only place they are combined. Nothing else in the app should
+// compute a balance.
 // ===========================================================================
-int computeBalancePaise({required int startingBalancePaise}) {
-  return startingBalancePaise;
+
+/// The balance of one account, in paise:
+/// starting + income - expense + transfersIn - transfersOut.
+///
+/// All sums are non-negative integer paise of that account's transactions
+/// (a transfer counts as "out" for its FROM account and "in" for its TO
+/// account). Integer arithmetic only.
+int computeBalancePaise({
+  required int startingBalancePaise,
+  int incomePaise = 0,
+  int expensePaise = 0,
+  int transfersInPaise = 0,
+  int transfersOutPaise = 0,
+}) {
+  return startingBalancePaise +
+      incomePaise -
+      expensePaise +
+      transfersInPaise -
+      transfersOutPaise;
 }
 
 /// TOTAL BALANCE: the sum of the balances of every NON-archived account

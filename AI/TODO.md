@@ -29,6 +29,8 @@ HANDOFF.md).
 - [x] Card dues count only what is owed, never netted across cards - 3a
 - [x] Finance home, Accounts screen, add/edit account sheet, theme fixes - 3b
 - [x] Comma safety in Money.parse, edit type-switch fix, captions - 3b-2
+- [x] Transactions: table + DAO + balances that move - 4a
+- [ ] Transactions: add/edit/delete screen, list, transfers - 4b
 - [ ] Transactions (table, balances, add/edit/delete, list, transfers)
 - [ ] Monthly summary view
 - [ ] Budget tracking

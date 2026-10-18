@@ -56,12 +56,6 @@ When adding an entry, use this format:
 - Used by: provider tests
 - Purpose: Riverpod container on an empty in-memory database
 
-### computeBalancePaise  (UPDATED)
-- File: lib/features/finance/data/account_balance.dart
-- Purpose: the ONE place an account's balance is computed. Today it equals
-  starting_balance; Task 4 adds transaction sums here. Nothing else may
-  compute a balance. Balances are never stored.
-
 ### totalBalancePaise / totalBalanceProvider  (UPDATED)
 - Files: lib/features/finance/data/account_balance.dart,
   lib/features/finance/presentation/providers/accounts_providers.dart
@@ -121,3 +115,19 @@ When adding an entry, use this format:
   (1,250  12,34,567  1,00,00,000) grouping, otherwise null; commas after the
   dot, trailing or doubled commas are rejected. format() always emits valid
   Indian grouping. Rupee symbol lives in Money.rupeeSymbol only.
+
+  ### TransactionsDao  (features/finance/data/transactions_dao.dart)
+- insert / update / delete / getById. Validates, writes and checks balance
+  range in ONE database transaction; throws
+  TransactionValidationException(error). TransactionsDao(db, {clock}).
+  bySource: true (update/delete) is for loans/investments code only.
+
+### computeBalancePaise  (UPDATED)
+- File: lib/features/finance/data/account_balance.dart
+- The ONE place the balance formula lives: starting + income − expense +
+  transfersIn − transfersOut (named params, default 0).
+
+### selectAccountsWithBalance  (features/finance/data/balance_queries.dart)
+- One SQL query: accounts + per-account transaction sums; reads accounts AND
+  transactions so .watch() re-emits on either. Used by
+  AccountsDao.watchAccountsWithBalance and TransactionsDao's range check.

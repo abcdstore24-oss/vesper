@@ -440,3 +440,27 @@ Supersedes the "Known edge" sentence in the Task 3b entry. Consequence of
 switches between card and non-card, the number stays but its meaning changes
 with the label (owed 77 becomes balance +77). A zero-balance Bank account
 switched to Credit card makes the user type 0.
+
+### 2026-10-18 — Transactions and moving balances (Phase 2, Task 4a)
+Local schema v4: additive migration adds `transactions` + two indexes.
+Balance = starting + income − expense + transfers in − transfers out,
+computed by computeBalancePaise from per-account sums done in SQL
+(balance_queries.dart, one query, integer SUM, user-scoped); the accounts
+stream re-emits when accounts OR transactions change. Paying a card is a
+transfer bank -> card: the bank drops, the card's balance rises (dues
+shrink), Total Balance drops by the same amount. All changes go through
+TransactionsDao in one database transaction: validate, write, then check
+that no affected account balance leaves +/- Money.maxPaise (rolls back
+otherwise; applies to delete too). Rules: amount 1..maxPaise; accounts must
+exist, belong to the user and not be archived; income/expense without a
+source need a non-archived category of the matching kind (never system);
+with a source the category must be system; transfers need a different
+destination account and no category or source; note max 100 code points;
+no dates after the end of today (a future entry would change today's
+balance; recurring entries are created when due). Rows with a source can't
+be updated or deleted normally (linkedToSource); bySource: true skips only
+that check, for loans/investments code. update() replaces all editable
+fields. Reused error values: income/expense with a destination account ->
+toAccountNotFound; transfer with a source -> sourceIncomplete. Caveats:
+timestamps are whole seconds (same-second rows have an arbitrary stable order
+until a rowid tiebreak is added); no index on to_account_id yet.

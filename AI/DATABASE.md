@@ -52,13 +52,18 @@ table must follow.
   never in budgets or charts. Seeded: sys_loan_given,
   sys_loan_repayment_received, sys_loan_taken, sys_loan_repayment_made,
   sys_investment_buy, sys_investment_sell. Local schema v2.
-- `transactions` (PLANNED, finalized in Task 4: id, user_id NOT NULL,
-  account_id, to_account_id [transfers only], category_id [nullable; none
-  for transfers], amount [integer paise, always > 0; direction comes from
-  type], type [income/expense/transfer], note, occurred_at, source_type +
-  source_id [nullable; set ONLY when a loan payment or investment trade
-  created it — recurring-generated transactions count normally and get
-  their own link in the Recurring task], created_at, updated_at)
+- `transactions` (id, user_id NOT NULL, account_id NOT NULL [the account
+  money leaves/enters; for a transfer the FROM account], to_account_id
+  [transfers only], category_id [none for transfers], amount [integer paise,
+  always 1..Money.maxPaise; direction comes from type], type [income/expense/
+  transfer, stored by name], note [trimmed, empty -> null, max 100
+  characters], occurred_at [not later than the end of today, local time],
+  source_type [loan/investment, by name] + source_id [both null or both set;
+  set ONLY when a loan payment or investment trade created the row],
+  created_at, updated_at). Indexes: (user_id, occurred_at), (account_id).
+  No foreign keys or CHECKs: every rule lives in TransactionsDao, in one
+  database transaction. A transfer is ONE row. Local schema v4. Account
+  balances are computed from these rows (account_balance.dart), never stored.
 - `budgets` (id, user_id, category_id, month, limit_amount)
 - `investments` (PLANNED — redesigned in the Investments task: an
   investment plus a trade history of buys/sells, each with quantity, price,

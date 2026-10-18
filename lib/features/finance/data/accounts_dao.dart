@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../core/db/app_database.dart';
 import '../../../core/utils/money.dart';
 import 'account_balance.dart';
+import 'balance_queries.dart';
 import 'accounts_table.dart';
 
 /// Why an account name was rejected.
@@ -113,18 +114,12 @@ class AccountsDao {
   /// first, then by name. Archived accounts are included; use
   /// [totalBalancePaise] and [creditCardDuesPaise] (which skip archived
   /// accounts) for the totals.
+  ///
+  /// Balances include the account's transactions (summed in SQL, see
+  /// balance_queries.dart) and the stream re-emits when either accounts or
+  /// transactions change.
   Stream<List<AccountWithBalance>> watchAccountsWithBalance(String userId) {
-    return _selectForUser(userId).watch().map(
-      (rows) => [
-        for (final a in rows)
-          AccountWithBalance(
-            account: a,
-            balancePaise: computeBalancePaise(
-              startingBalancePaise: a.startingBalance,
-            ),
-          ),
-      ],
-    );
+    return selectAccountsWithBalance(_db, userId: userId).watch();
   }
 
   SimpleSelectStatement<$AccountsTable, AccountRow> _selectForUser(

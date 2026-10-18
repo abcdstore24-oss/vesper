@@ -9,7 +9,7 @@ import 'package:vesper/features/finance/data/accounts_table.dart';
 /// version 2 (user_profile, remote_status_cache, categories and its index),
 /// read from sqlite_master of a database freshly created by the real
 /// generated code. `accounts` is deliberately NOT included: it is the v3
-/// addition.
+/// addition (and `transactions` the v4 one).
 ///
 /// If a LATER migration alters one of these four tables, this stops being a
 /// true v2 snapshot: at that point replace this helper with literal DDL
@@ -38,7 +38,7 @@ void main() {
     await db.close();
   });
 
-  test('v2 -> v3 adds accounts + its index and keeps every old row', () async {
+  test('v2 -> v4 adds accounts + transactions with their indexes and keeps every old row', () async {
     final ddl = await generatedV2Ddl();
     expect(ddl, hasLength(4));
     expect(ddl.any((s) => s.contains('accounts')), isFalse);
@@ -71,7 +71,8 @@ void main() {
       ),
     );
 
-    // First query opens the database and runs the v2 -> v3 upgrade.
+    // First query opens the database and runs the v2 -> v4 upgrade
+    // (from < 3, then from < 4).
     expect(await db.select(db.accounts).get(), isEmpty);
 
     // Old rows survived untouched.
@@ -94,9 +95,18 @@ void main() {
     final names = schema.map((r) => r.read<String>('name')).toSet();
     expect(names, containsAll(['accounts', 'accounts_user_idx']));
     expect(names, contains('categories_user_kind_idx'));
+    expect(
+      names,
+      containsAll([
+        'transactions',
+        'transactions_user_date_idx',
+        'transactions_account_idx',
+      ]),
+    );
+    expect(await db.select(db.transactions).get(), isEmpty);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 3);
+    expect(version.read<int>('user_version'), 4);
 
     // The new table is usable.
     final id = await AccountsDao(db).insert(
