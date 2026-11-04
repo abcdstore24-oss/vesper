@@ -464,3 +464,83 @@ fields. Reused error values: income/expense with a destination account ->
 toAccountNotFound; transfer with a source -> sourceIncomplete. Caveats:
 timestamps are whole seconds (same-second rows have an arbitrary stable order
 until a rowid tiebreak is added); no index on to_account_id yet.
+
+### 2026-10-19 — Add transaction + Recent transactions (Phase 2, Task 4b-1)
+The Finance home gets a FAB (tooltip "Add transaction", no hero tag so
+tabs with their own FABs can't clash) opening a modal sheet: type chips
+(Expense default, Income, Transfer — Transfer disabled with fewer than two
+active accounts), amount (Money.parse only, no sign, "0" is its own error),
+category chips for the chosen kind (nothing preselected, cleared when
+switching expense/income), account chips (Paid from / Received in / From,
+default the first active account, "To" excludes From), a Date field and an
+optional note. Save is guarded against double-taps; DAO errors map to inline
+messages. No accounts: a message and the existing Add account sheet.
+"Recent transactions" shows the 5 newest rows as descriptive tiles: title =
+note, else category, else "Transfer"/"Uncategorised"; subtitle "category ·
+account · date" (category dropped when it is the title), transfers "from →
+to · date"; expense = negative + danger, income = positive + success,
+transfer = neutral. Icon circles are neutral (category colours are reserved
+for charts). Rows are not tappable and there is no "See all" yet. Order:
+occurred_at, then created_at, then rowid (same-second rows come out
+newest-first). Dates: AppDates formats Today/Yesterday/"5 Oct"/"5 Oct 2025"
+with hand-written month names (no intl); the picker allows no future days;
+picking today stores the current time, any other day 12:00 local.
+
+### 2026-10-20 — Test fonts: narrow filter for google_fonts' missing-asset error
+In the test sandbox there are no font files and runtime fetching is off, so
+google_fonts rethrows from an un-awaited future, which failed whichever test was
+running. Tests now build AppTheme through buildTestTheme(), which runs the
+theme getters in a guarded zone that ignores ONLY an Exception whose message
+contains "allowRuntimeFetching is false but font" and "was not found in the
+application assets"; every other error is re-reported unchanged (proved by
+run_ignoring_missing_fonts_test.dart). No lib/ change. The "Error: google_fonts
+was unable to load font ..." lines that still print during `flutter test` are
+console output only. Proper long-term fix (separate task): bundle Fraunces and
+Karla as app assets, which also fixes the offline first launch.
+
+### 2026-10-20 — Widget-test rules learned (Phase 2)
+Accounts have whole-second created_at, so DB-backed widget tests that create
+several accounts set distinct created_at (base + i seconds); the app orders by
+created_at then name, and real accounts are created far apart in time.
+Providers that load lazily (for example income categories, first shown when the
+Income chip is tapped) need real async time: tests wait on a CONDITION
+(settleUntil) after the action that first shows them, never a fixed delay. An
+error text that should disappear needs ~300 ms of pumping (InputDecorator
+fades it out). Earlier "cascade" explanations for No-element / Expected-true
+failures were wrong: they were real test bugs hidden behind the google_fonts
+failures. Shared test helpers must be MERGED, never overwritten from an old
+copy.
+
+### 2026-10-20 — Scalable pickers, recent categories, cleaner row (Tasks 4b-1b)
+Supersedes the 4b-1 entry on three points. (1) Category: ONE picker field
+(shared PickerSheet: lazy fixed-height rows, a "Search" box only above 8 items,
+case-insensitive "contains", a check on the selected row, "No matches") plus a
+"Recent" row of up to 5 one-tap chips of the most recently used categories of
+that kind (distinct, active, ordinary rows only: no sourced rows, no transfers;
+ordered by latest use: MAX occurred_at, created_at, rowid). (2) Accounts: chips
+for up to 4 active accounts (accountChipsMax), picker fields (account type as
+subtitle) beyond that, for From and To together; "To" never offers the From
+account and changing From to equal To clears To. (3) Row layout: the DATE moved
+out of the subtitle into its own label under the amount (Today / Yesterday /
+"5 Oct" / "5 Oct 2025"); the subtitle is "category · account" (just the account
+when the title is the category) or "from → to"; the amount and date are never
+truncated (they scale down); title and subtitle are capped at two lines.
+Verified on a real Android phone. Judge speed with `flutter run --release`
+(debug builds are much slower).
+
+### 2026-10-20 — Planned decisions, not yet built
+Account archive/delete (Task 4d): an account can be deleted only if it has no
+transactions (as account or as transfer destination); otherwise it can be
+archived, and only when its balance is zero. Archived accounts stay in history
+and are hidden from pickers. Editing a transaction (Task 4b-2b): its category
+may stay even if that category has been archived since (one DAO rule change:
+an archived category is allowed when it equals the row's current category);
+choosing a different category still requires an active one. A transaction whose
+account was archived since can be edited by choosing another account. Rows with
+a source (loan/investment) are shown locked: "Edit it from Loans/Investments".
+Category management (own categories, rename, archive) is a separate task; the
+DAO stays free of delete. A profile editor (name + birthdate in Settings) is
+needed before the dashboard's age/days-to-birthday feature can show anything.
+The optional selectable money view (balances / investments / money owed to me /
+money I owe / card dues) will supersede "No net worth" when built; every part is
+shown so the total is always explainable.

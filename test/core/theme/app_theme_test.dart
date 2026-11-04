@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vesper/core/theme/app_colors.dart';
 import 'package:vesper/core/theme/app_spacing.dart';
-import 'package:vesper/core/theme/app_theme.dart';
 
 import '../../support/ui_test_helpers.dart';
 
@@ -22,7 +21,7 @@ void main() {
       testWidgets('dividers use the border token (not near-white)', (
         tester,
       ) async {
-        final theme = isDark ? AppTheme.dark : AppTheme.light;
+        final theme = buildTestTheme(isDark ? Brightness.dark : Brightness.light);
 
         expect(theme.dividerTheme.color, palette.border);
         expect(theme.dividerTheme.thickness, 1);
@@ -33,7 +32,7 @@ void main() {
       testWidgets('bottom sheets: surface, drag handle, 20px top corners', (
         tester,
       ) async {
-        final theme = isDark ? AppTheme.dark : AppTheme.light;
+        final theme = buildTestTheme(isDark ? Brightness.dark : Brightness.light);
 
         final sheet = theme.bottomSheetTheme;
         expect(sheet.backgroundColor, palette.surface);
@@ -53,7 +52,7 @@ void main() {
       testWidgets('chips: pill, border, no checkmark, accent when selected', (
         tester,
       ) async {
-        final theme = isDark ? AppTheme.dark : AppTheme.light;
+        final theme = buildTestTheme(isDark ? Brightness.dark : Brightness.light);
 
         final chip = theme.chipTheme;
         expect(chip.backgroundColor, palette.surfaceVariant);

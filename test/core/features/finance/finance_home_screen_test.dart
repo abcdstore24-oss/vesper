@@ -25,7 +25,9 @@ void main() {
     await pumpUi(
       tester,
       const FinanceHomeScreen(),
-      overrides: [accountsOverride(const [])],
+      overrides: [
+        recentTransactionsOverride(const []),
+        accountsOverride(const [])],
     );
 
     expect(find.byKey(_totalCard), findsOneWidget);
@@ -46,6 +48,7 @@ void main() {
       tester,
       const FinanceHomeScreen(),
       overrides: [
+        recentTransactionsOverride(const []),
         accountsOverride([
           makeAccount(id: 'a', name: 'Bank', balance: 100000),
           makeAccount(
@@ -81,6 +84,7 @@ void main() {
       tester,
       const FinanceHomeScreen(),
       overrides: [
+        recentTransactionsOverride(const []),
         accountsOverride([
           makeAccount(
             id: 'c',
@@ -107,6 +111,7 @@ void main() {
       tester,
       const FinanceHomeScreen(),
       overrides: [
+        recentTransactionsOverride(const []),
         accountsOverride([
           makeAccount(id: 'o', name: 'Old', balance: 1000, isArchived: true),
           makeAccount(
@@ -136,6 +141,7 @@ void main() {
       size: const Size(320, 640),
       textScale: 1.5,
       overrides: [
+        recentTransactionsOverride(const []),
         accountsOverride([
           makeAccount(id: 'a', balance: 1),
           makeAccount(
@@ -162,6 +168,7 @@ void main() {
       tester,
       const FinanceHomeScreen(),
       overrides: [
+        recentTransactionsOverride(const []),
         accountsWithBalanceProvider.overrideWith((ref) {
           final controller = StreamController<List<AccountWithBalance>>();
           ref.onDispose(controller.close);
@@ -181,6 +188,7 @@ void main() {
       tester,
       const FinanceHomeScreen(),
       overrides: [
+        recentTransactionsOverride(const []),
         accountsWithBalanceProvider.overrideWith((ref) {
           calls++;
           return calls == 1
@@ -213,6 +221,7 @@ void main() {
           textScale: 1.5,
           brightness: brightness,
           overrides: [
+        recentTransactionsOverride(const []),
             accountsOverride([
               makeAccount(id: 'a', name: 'Bank', balance: Money.maxPaise),
               makeAccount(
@@ -259,6 +268,7 @@ void main() {
       size: const Size(320, 640),
       textScale: 1.5,
       overrides: [
+        recentTransactionsOverride(const []),
         accountsOverride([
           makeAccount(id: 'a', name: 'One', balance: Money.maxPaise),
           makeAccount(id: 'b', name: 'Two', balance: Money.maxPaise),
@@ -276,6 +286,7 @@ void main() {
       tester,
       const FinanceHomeScreen(),
       overrides: [
+        recentTransactionsOverride(const []),
         accountsOverride([makeAccount(name: 'Cash', balance: 100)]),
       ],
     );

@@ -64,7 +64,7 @@ table must follow.
   No foreign keys or CHECKs: every rule lives in TransactionsDao, in one
   database transaction. A transfer is ONE row. Local schema v4. Account
   balances are computed from these rows (account_balance.dart), never stored.
-- `budgets` (id, user_id, category_id, month, limit_amount)
+- `budgets` (PLANNED: id, user_id, category_id, month, limit_amount [integer paise])
 - `investments` (PLANNED — redesigned in the Investments task: an
   investment plus a trade history of buys/sells, each with quantity, price,
   the account used, and for sales the amount typed by the user. Holdings,
@@ -74,6 +74,11 @@ table must follow.
 - `loans`, `loan_payments` (PLANNED — Loans task: a loan is "given" or
   "taken" with a person and principal; each payment can create a linked
   transaction. Remaining = principal − payments, never stored.)
+- `recurring_rules` (PLANNED — Recurring task: id, user_id, the transaction
+  template [account, type, category, amount, note], frequency [daily / weekly /
+  monthly / yearly / every N days-weeks-months], next_run; monthly runs clamp
+  to the month's last day. Transactions it creates count normally in summaries
+  and link back to the rule; they do NOT use source_type.)
 
 ## Vault (zero-knowledge)
 - `vault_items` (id, user_id, item_type[credential/note/document_ref],

@@ -6,6 +6,7 @@ import 'accounts_dao.dart';
 import 'balance_queries.dart';
 import 'categories_dao.dart';
 import 'categories_table.dart';
+import 'transaction_queries.dart';
 import 'transactions_table.dart';
 
 /// Why a transaction change was rejected.
@@ -209,6 +210,16 @@ class TransactionsDao {
 
       await _checkBalances(old.userId, {old.accountId, ?old.toAccountId});
     });
+  }
+
+  /// Watches [userId]'s [limit] most recent transactions with category and
+  /// account names, newest first. Re-emits when transactions, categories or
+  /// accounts change.
+  Stream<List<TransactionListItem>> watchRecent(
+    String userId, {
+    int limit = 5,
+  }) {
+    return selectRecentTransactions(_db, userId: userId, limit: limit).watch();
   }
 
   Future<TransactionRow?> getById(String id) {

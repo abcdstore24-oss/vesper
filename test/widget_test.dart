@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:vesper/features/finance/data/account_balance.dart';
+import 'package:vesper/features/finance/data/transaction_queries.dart';
 import 'package:vesper/features/finance/presentation/providers/accounts_providers.dart';
+import 'package:vesper/features/finance/presentation/providers/transactions_providers.dart';
 import 'package:vesper/main.dart';
 
 void main() {
@@ -17,6 +19,11 @@ void main() {
           // animate forever and pumpAndSettle would time out.
           accountsWithBalanceProvider.overrideWith(
             (ref) => Stream.value(const <AccountWithBalance>[]),
+          ),
+          // The Finance home also shows "Recent transactions", which would
+          // sit on its own spinner for the same reason.
+          recentTransactionsProvider.overrideWith(
+            (ref) => Stream.value(const <TransactionListItem>[]),
           ),
         ],
         child: const VesperApp(),

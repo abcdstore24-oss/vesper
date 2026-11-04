@@ -51,6 +51,25 @@ this order:
   money.dart); never double/num.
 - Widget tests use test/support/ui_test_helpers.dart (see COMPONENTS.md);
   build AppTheme inside test bodies, never at file load time.
+  
+- Work from the CURRENT repo files (the owner pushes before each task). Never
+  deliver a shared file (for example test/support/ui_test_helpers.dart, a
+  theme, a provider file) rebuilt from an old copy. If you change a shared
+  file, say exactly which parts changed (a diff) so the owner can MERGE them,
+  and if you cannot read the current file, ask for it.
+- When you hand me files, list each one with its full path and say NEW,
+  REPLACE or MERGE. Doc text you give me (TODO / DECISIONS / COMPONENTS /
+  DATABASE) must be complete, never cut off, and use today's date.
+- Keep reports short: plan, code, what you could not verify, commands. Do not
+  restate the whole prompt. Say "unverified" for anything you could not run.
+- Never claim flutter analyze or flutter test passed unless you ran them.
+- Before you write or review anything, list the files you need to see. If a
+  file is not in front of you, or the only copy you have is an older version
+  from earlier in the conversation or a stale repo copy, STOP and ask me for
+  the current file. Never assume an old version is still current.
+- End your report with a suggested commit message: one summary line, a few
+  short bullet lines, and the test result. It is only for use after I have
+  run flutter analyze, flutter test and my phone check.
 
 **My task for this session:**
 
