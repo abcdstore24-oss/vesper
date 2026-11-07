@@ -6,6 +6,5 @@ class TasksPlaceholderScreen extends StatelessWidget {
   const TasksPlaceholderScreen({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      const PlaceholderScreen(title: 'Tasks');
+  Widget build(BuildContext context) => const PlaceholderScreen(title: 'Tasks');
 }

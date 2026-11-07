@@ -178,7 +178,10 @@ class _ErrorCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Couldn't load your accounts", style: theme.textTheme.bodyLarge),
+            Text(
+              "Couldn't load your accounts",
+              style: theme.textTheme.bodyLarge,
+            ),
             const SizedBox(height: AppSpacing.sm),
             TextButton(onPressed: onRetry, child: const Text('Retry')),
           ],

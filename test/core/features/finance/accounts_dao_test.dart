@@ -10,11 +10,7 @@ import 'package:vesper/features/finance/data/accounts_dao.dart';
 import 'package:vesper/features/finance/data/accounts_table.dart';
 
 Matcher invalidName(AccountValidationError expected) => throwsA(
-  isA<AccountValidationException>().having(
-    (e) => e.error,
-    'error',
-    expected,
-  ),
+  isA<AccountValidationException>().having((e) => e.error, 'error', expected),
 );
 
 void main() {
@@ -45,19 +41,12 @@ void main() {
 
   Future<void> setTimes(String id, DateTime created) =>
       (db.update(db.accounts)..where((t) => t.id.equals(id))).write(
-        AccountsCompanion(
-          createdAt: Value(created),
-          updatedAt: Value(created),
-        ),
+        AccountsCompanion(createdAt: Value(created), updatedAt: Value(created)),
       );
 
   group('insert', () {
     test('stores a trimmed name and sensible defaults', () async {
-      final id = await add(
-        '  Cash  ',
-        paise: 12345,
-        type: AccountType.cash,
-      );
+      final id = await add('  Cash  ', paise: 12345, type: AccountType.cash);
 
       final row = (await dao.getById(id))!;
       expect(row.name, 'Cash');
@@ -102,21 +91,24 @@ void main() {
       );
     });
 
-    test('duplicate name for the same user is rejected, ignoring case', () async {
-      await add('Cash');
-      for (final dup in ['Cash', 'cash', 'CASH', '  cAsH  ']) {
+    test(
+      'duplicate name for the same user is rejected, ignoring case',
+      () async {
+        await add('Cash');
+        for (final dup in ['Cash', 'cash', 'CASH', '  cAsH  ']) {
+          await expectLater(
+            add(dup),
+            invalidName(AccountValidationError.duplicateName),
+          );
+        }
+        await add('\u00C9lan');
         await expectLater(
-          add(dup),
+          add('\u00E9LAN'),
           invalidName(AccountValidationError.duplicateName),
         );
-      }
-      await add('\u00C9lan');
-      await expectLater(
-        add('\u00E9LAN'),
-        invalidName(AccountValidationError.duplicateName),
-      );
-      expect(await dao.getAll(userId), hasLength(2));
-    });
+        expect(await dao.getAll(userId), hasLength(2));
+      },
+    );
 
     test('another user may reuse a name', () async {
       await add('Cash');
@@ -153,25 +145,28 @@ void main() {
   });
 
   group('update', () {
-    test('changes fields, trims, and sets updated_at but not created_at', () async {
-      final id = await add('Cash', paise: 100, type: AccountType.cash);
-      final past = DateTime.utc(2020, 1, 1);
-      await setTimes(id, past);
+    test(
+      'changes fields, trims, and sets updated_at but not created_at',
+      () async {
+        final id = await add('Cash', paise: 100, type: AccountType.cash);
+        final past = DateTime.utc(2020, 1, 1);
+        await setTimes(id, past);
 
-      await dao.update(
-        id,
-        name: '  Wallet  ',
-        type: AccountType.wallet,
-        startingBalancePaise: 250,
-      );
+        await dao.update(
+          id,
+          name: '  Wallet  ',
+          type: AccountType.wallet,
+          startingBalancePaise: 250,
+        );
 
-      final row = (await dao.getById(id))!;
-      expect(row.name, 'Wallet');
-      expect(row.type, AccountType.wallet);
-      expect(row.startingBalance, 250);
-      expect(row.createdAt.isAtSameMomentAs(past), isTrue);
-      expect(row.updatedAt.isAfter(past), isTrue);
-    });
+        final row = (await dao.getById(id))!;
+        expect(row.name, 'Wallet');
+        expect(row.type, AccountType.wallet);
+        expect(row.startingBalance, 250);
+        expect(row.createdAt.isAtSameMomentAs(past), isTrue);
+        expect(row.updatedAt.isAfter(past), isTrue);
+      },
+    );
 
     test('null fields are left unchanged', () async {
       final id = await add('Cash', paise: 100, type: AccountType.cash);
@@ -202,30 +197,37 @@ void main() {
       expect((await dao.getById(id))!.name, 'Bank');
     });
 
-    test('same validation as insert; a failed update changes nothing', () async {
-      final id = await add('Cash', paise: 100);
+    test(
+      'same validation as insert; a failed update changes nothing',
+      () async {
+        final id = await add('Cash', paise: 100);
 
-      await expectLater(
-        dao.update(id, name: '  '),
-        invalidName(AccountValidationError.emptyName),
-      );
-      await expectLater(
-        dao.update(id, name: 'x' * 41),
-        invalidName(AccountValidationError.nameTooLong),
-      );
-      await expectLater(
-        dao.update(id, startingBalancePaise: Money.maxPaise + 1),
-        throwsArgumentError,
-      );
-      await expectLater(
-        dao.update(id, name: 'Fine', startingBalancePaise: -Money.maxPaise - 1),
-        throwsArgumentError,
-      );
+        await expectLater(
+          dao.update(id, name: '  '),
+          invalidName(AccountValidationError.emptyName),
+        );
+        await expectLater(
+          dao.update(id, name: 'x' * 41),
+          invalidName(AccountValidationError.nameTooLong),
+        );
+        await expectLater(
+          dao.update(id, startingBalancePaise: Money.maxPaise + 1),
+          throwsArgumentError,
+        );
+        await expectLater(
+          dao.update(
+            id,
+            name: 'Fine',
+            startingBalancePaise: -Money.maxPaise - 1,
+          ),
+          throwsArgumentError,
+        );
 
-      final row = (await dao.getById(id))!;
-      expect(row.name, 'Cash');
-      expect(row.startingBalance, 100);
-    });
+        final row = (await dao.getById(id))!;
+        expect(row.name, 'Cash');
+        expect(row.startingBalance, 100);
+      },
+    );
 
     test('negative balance is allowed on update', () async {
       final id = await add('Visa');
@@ -254,7 +256,12 @@ void main() {
       await setTimes(al, DateTime.utc(2020, 1, 3));
       await add('Other user', user: 'user-2');
 
-      const expected = ['B early', 'A late', 'Alpha same time', 'Zed same time'];
+      const expected = [
+        'B early',
+        'A late',
+        'Alpha same time',
+        'Zed same time',
+      ];
       expect((await dao.getAll(userId)).map((r) => r.name), expected);
 
       final streamed = await dao.watchAccountsWithBalance(userId).first;
@@ -267,36 +274,36 @@ void main() {
 
       final list = await dao.watchAccountsWithBalance(userId).first;
       expect(list.map((a) => a.balancePaise), [12345, -500000]);
-      expect(
-        computeBalancePaise(startingBalancePaise: 777),
-        777,
-      );
+      expect(computeBalancePaise(startingBalancePaise: 777), 777);
     });
 
-    test('total excludes archived accounts and credit cards; empty gives 0', () async {
-      expect(totalBalancePaise(const []), 0);
-      expect(creditCardDuesPaise(const []), 0);
-      final empty = await dao.watchAccountsWithBalance(userId).first;
-      expect(totalBalancePaise(empty), 0);
-      expect(creditCardDuesPaise(empty), 0);
+    test(
+      'total excludes archived accounts and credit cards; empty gives 0',
+      () async {
+        expect(totalBalancePaise(const []), 0);
+        expect(creditCardDuesPaise(const []), 0);
+        final empty = await dao.watchAccountsWithBalance(userId).first;
+        expect(totalBalancePaise(empty), 0);
+        expect(creditCardDuesPaise(empty), 0);
 
-      final cash = await add('Cash', paise: 100000, type: AccountType.cash);
-      await add('Bank', paise: 250050);
-      await add('Visa', paise: -30000, type: AccountType.creditCard);
-      await add('Old', paise: 999999999);
-      await (db.update(db.accounts)..where((t) => t.name.equals('Old')))
-          .write(const AccountsCompanion(isArchived: Value(true)));
+        final cash = await add('Cash', paise: 100000, type: AccountType.cash);
+        await add('Bank', paise: 250050);
+        await add('Visa', paise: -30000, type: AccountType.creditCard);
+        await add('Old', paise: 999999999);
+        await (db.update(db.accounts)..where((t) => t.name.equals('Old')))
+            .write(const AccountsCompanion(isArchived: Value(true)));
 
-      final list = await dao.watchAccountsWithBalance(userId).first;
-      expect(list, hasLength(4)); // archived accounts are still listed
-      expect(totalBalancePaise(list), 100000 + 250050); // no Visa, no Old
-      expect(creditCardDuesPaise(list), 30000);
+        final list = await dao.watchAccountsWithBalance(userId).first;
+        expect(list, hasLength(4)); // archived accounts are still listed
+        expect(totalBalancePaise(list), 100000 + 250050); // no Visa, no Old
+        expect(creditCardDuesPaise(list), 30000);
 
-      await dao.update(cash, startingBalancePaise: 0);
-      final after = await dao.watchAccountsWithBalance(userId).first;
-      expect(totalBalancePaise(after), 250050);
-      expect(creditCardDuesPaise(after), 30000);
-    });
+        await dao.update(cash, startingBalancePaise: 0);
+        final after = await dao.watchAccountsWithBalance(userId).first;
+        expect(totalBalancePaise(after), 250050);
+        expect(creditCardDuesPaise(after), 30000);
+      },
+    );
 
     test('only a credit card: total is 0 and dues are -balance', () async {
       await add('Visa', paise: -45000, type: AccountType.creditCard);
@@ -426,10 +433,7 @@ void main() {
     });
 
     test('accounts is in allTables, so data export picks it up', () {
-      expect(
-        db.allTables.map((t) => t.actualTableName),
-        contains('accounts'),
-      );
+      expect(db.allTables.map((t) => t.actualTableName), contains('accounts'));
     });
   });
 

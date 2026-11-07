@@ -20,10 +20,7 @@ void main() {
         'Yesterday',
       );
       expect(
-        AppDates.format(
-          DateTime(2026, 2, 28, 8),
-          now: DateTime(2026, 3, 1, 9),
-        ),
+        AppDates.format(DateTime(2026, 2, 28, 8), now: DateTime(2026, 3, 1, 9)),
         'Yesterday',
       );
       expect(

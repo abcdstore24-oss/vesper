@@ -25,49 +25,49 @@ class AppTypography {
 
   /// Large numeric displays — balances, streaks. Fraunces.
   static TextStyle get displayLarge => GoogleFonts.fraunces(
-        fontSize: 57,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.25,
-        height: 1.12,
-      );
+    fontSize: 57,
+    fontWeight: FontWeight.w600,
+    letterSpacing: -0.25,
+    height: 1.12,
+  );
 
   /// Screen titles. Fraunces.
   static TextStyle get headlineLarge => GoogleFonts.fraunces(
-        fontSize: 32,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0,
-        height: 1.25,
-      );
+    fontSize: 32,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+    height: 1.25,
+  );
 
   /// Section headers. Fraunces.
   static TextStyle get titleMedium => GoogleFonts.fraunces(
-        fontSize: 20,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.15,
-        height: 1.3,
-      );
+    fontSize: 20,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.15,
+    height: 1.3,
+  );
 
   /// Body text. Karla.
   static TextStyle get bodyLarge => GoogleFonts.karla(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.15,
-        height: 1.5,
-      );
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0.15,
+    height: 1.5,
+  );
 
   /// Secondary/meta body text. Karla.
   static TextStyle get bodyMedium => GoogleFonts.karla(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.25,
-        height: 1.43,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0.25,
+    height: 1.43,
+  );
 
   /// Buttons, form labels. Karla.
   static TextStyle get labelLarge => GoogleFonts.karla(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.1,
-        height: 1.43,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.1,
+    height: 1.43,
+  );
 }

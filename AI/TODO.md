@@ -39,11 +39,9 @@ HANDOFF.md).
 - [x] Scalable category/account pickers, recent categories, cleaner
       transaction row — 4b-1b
 - [x] Widget-test infrastructure: narrow google_fonts filter, stable DB tests
+- [x] Full transactions list: See all, lazy date-grouped list, type filter chips — 4b-2a
 
 ### Next up, in this order
-- [ ] **4b-2a** Full transactions list: "See all" from Recent; lazy list
-      grouped by date (Today / Yesterday / date), newest first; filter chips
-      All / Expense / Income / Transfer; same descriptive rows.
 - [ ] **4b-2b** Edit + delete a transaction: tap a row to edit in the same
       sheet; delete with a confirm that says how the balance changes; locked
       rows (created by loans/investments) show a lock and "Edit it from

@@ -6,6 +6,5 @@ class NotesPlaceholderScreen extends StatelessWidget {
   const NotesPlaceholderScreen({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      const PlaceholderScreen(title: 'Notes');
+  Widget build(BuildContext context) => const PlaceholderScreen(title: 'Notes');
 }

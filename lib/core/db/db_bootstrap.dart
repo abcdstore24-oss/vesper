@@ -55,8 +55,9 @@ Future<void> ensureBaselineData(
 /// changed.
 Future<String> ensureLocalUser(AppDatabase db) {
   return db.transaction(() async {
-    final existing = await (db.select(db.userProfile)..limit(1))
-        .getSingleOrNull();
+    final existing = await (db.select(
+      db.userProfile,
+    )..limit(1)).getSingleOrNull();
 
     if (existing == null) {
       final userId = generateId();
@@ -75,13 +76,14 @@ Future<String> ensureLocalUser(AppDatabase db) {
     if (current != null && current.isNotEmpty) return current;
 
     final userId = generateId();
-    await (db.update(db.userProfile)..where((t) => t.id.equals(existing.id)))
-        .write(
-          UserProfileCompanion(
-            userId: Value(userId),
-            updatedAt: Value(DateTime.now()),
-          ),
-        );
+    await (db.update(
+      db.userProfile,
+    )..where((t) => t.id.equals(existing.id))).write(
+      UserProfileCompanion(
+        userId: Value(userId),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
     return userId;
   });
 }

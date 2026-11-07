@@ -134,7 +134,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     _saveStarted = true;
 
     final text = _amount.text.trim();
-    final parsed = text.isEmpty ? null : Money.parse(text, allowNegative: false);
+    final parsed = text.isEmpty
+        ? null
+        : Money.parse(text, allowNegative: false);
     final amountError = parsed == null
         ? 'Enter an amount like 1250 or 1250.50 (up to 2 decimals)'
         : (parsed == 0 ? 'Enter an amount greater than 0' : null);
@@ -483,7 +485,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
             decoration: InputDecoration(
               labelText: 'Date',
               errorText: _dateError,
-              suffixIcon: Icon(PhosphorIconsRegular.calendarBlank, color: muted),
+              suffixIcon: Icon(
+                PhosphorIconsRegular.calendarBlank,
+                color: muted,
+              ),
             ),
             child: Text(
               AppDates.format(_date),
@@ -798,7 +803,10 @@ class _PickerField extends StatelessWidget {
           suffixIcon: Icon(PhosphorIconsRegular.caretDown, color: muted),
         ),
         child: value == null
-            ? Text(hint, style: theme.textTheme.bodyLarge?.copyWith(color: muted))
+            ? Text(
+                hint,
+                style: theme.textTheme.bodyLarge?.copyWith(color: muted),
+              )
             : Row(
                 children: [
                   if (icon != null) ...[

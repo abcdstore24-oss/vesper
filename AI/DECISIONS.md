@@ -544,3 +544,31 @@ needed before the dashboard's age/days-to-birthday feature can show anything.
 The optional selectable money view (balances / investments / money owed to me /
 money I owe / card dues) will supersede "No net worth" when built; every part is
 shown so the total is always explainable.
+
+### 2026-11-06 — Full transactions list (Phase 2, Task 4b-2a)
+"See all" in the Recent transactions header (shown only when there is at
+least one row; not in the empty, loading or error states) pushes a
+Transactions screen with a plain Navigator.push. It shows every transaction,
+newest first (occurred_at, created_at, rowid, all descending), grouped under
+date headers (Today / Yesterday / "5 Oct" / "5 Oct 2025"). The filter chips
+All / Expense / Income / Transfer are single-select, local to the screen, and
+always visible; only the list area shows loading or an error. The filter is
+applied in SQL: selectRecentTransactions gained optional type and limit
+(null = no limit); Recent still passes 5 and behaves as before. The joins
+are LEFT joins that ignore is_archived, so rows whose category or account
+was archived still show their names; rows with a source (loan/investment)
+are included and filter by their type. Grouping is
+groupTransactionsByDate(items, {now}): a pure function that groups by the
+LOCAL calendar day of occurred_at, keeps the input order (a new header
+whenever the day changes) and flattens to header and row entries for a lazy
+ListView.builder; no sticky headers. Each row is a TransactionTile inside its
+own Card (theme default margin); TransactionTile gained showDate (default
+true), and the list passes false because the header carries the date. The
+screen has its own + button (FAB, heroTag: null, tooltip "Add transaction")
+that opens the existing add sheet; the list has 96px bottom padding so the FAB
+never covers the last row. allTransactionsProvider is an autoDispose family
+keyed by TransactionType? (null = All), so a stream over every row does not
+outlive the screen; switching chips shows a spinner for the first load of
+that filter. Rows are read-only (edit/delete/lock is 4b-2b). Known scaling
+limit: no pagination yet; every row of the chosen filter is loaded into
+memory (the list itself is built lazily).

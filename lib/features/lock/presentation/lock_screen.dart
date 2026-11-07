@@ -40,8 +40,9 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     // is nothing here worth protecting behind a dead end, and
     // starting the prompt here is what causes it to visibly float
     // over KillSwitchScreen once this widget gets unmounted under it.
-    final killSwitchAlreadyActive =
-        ref.read(effectiveRemoteStatusProvider).killSwitch;
+    final killSwitchAlreadyActive = ref
+        .read(effectiveRemoteStatusProvider)
+        .killSwitch;
     if (ref.read(appLockModeProvider) == AppLockMode.os &&
         !killSwitchAlreadyActive) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _attemptOsAuth());
@@ -79,14 +80,16 @@ class _LockScreenState extends ConsumerState<LockScreen> {
           // ref.listen in build()), stopAuthentication() causes this
           // branch to run right as _KillSwitchGate is unmounting this
           // widget — without the mounted check this throws.
-          if (mounted) setState(() => _osAuthError = 'Authentication cancelled.');
+          if (mounted)
+            setState(() => _osAuthError = 'Authentication cancelled.');
         }
       } finally {
         ref.read(authPromptActiveProvider.notifier).set(false);
         if (mounted) setState(() => _authInProgress = false);
       }
     } catch (_) {
-      if (mounted) setState(() => _osAuthError = "Couldn't authenticate. Try again.");
+      if (mounted)
+        setState(() => _osAuthError = "Couldn't authenticate. Try again.");
     } finally {
       if (mounted) setState(() => _authInProgress = false);
     }

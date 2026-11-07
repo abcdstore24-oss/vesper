@@ -11,10 +11,7 @@ import '../../data/accounts_table.dart';
 import '../account_display.dart';
 
 /// Opens the add-account sheet, or the edit sheet when [account] is given.
-Future<void> showAccountFormSheet(
-  BuildContext context, {
-  AccountRow? account,
-}) {
+Future<void> showAccountFormSheet(BuildContext context, {AccountRow? account}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,

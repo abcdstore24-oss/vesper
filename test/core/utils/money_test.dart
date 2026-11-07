@@ -176,10 +176,7 @@ void main() {
       expect(Money.parse('10000000000000'), isNull);
       expect(Money.parse('99999999999999999999999999999'), isNull);
       expect(Money.parse('0' * 40 + '99999999999999999999'), isNull);
-      expect(
-        Money.parse('-1000000000000.01', allowNegative: true),
-        isNull,
-      );
+      expect(Money.parse('-1000000000000.01', allowNegative: true), isNull);
     });
   });
 
@@ -327,7 +324,9 @@ void main() {
 
   group('source guard (locked rules)', () {
     test('money.dart uses no floating-point or rounding APIs', () {
-      final String source = File('lib/core/utils/money.dart').readAsStringSync();
+      final String source = File(
+        'lib/core/utils/money.dart',
+      ).readAsStringSync();
       final String code = source
           .split('\n')
           .where((String line) => !line.trim().startsWith('//'))

@@ -129,53 +129,62 @@ void main() {
       expect(await balances(), {a: 100000, b: 30000});
     });
 
-    test('bank -> card transfer: total down, card dues down, nothing else', () async {
-      final bank = await acct('Bank', paise: 100000);
-      final cash = await acct('Cash', type: AccountType.cash, paise: 5000);
-      final card = await acct(
-        'Visa',
-        type: AccountType.creditCard,
-        paise: -30000,
-      );
+    test(
+      'bank -> card transfer: total down, card dues down, nothing else',
+      () async {
+        final bank = await acct('Bank', paise: 100000);
+        final cash = await acct('Cash', type: AccountType.cash, paise: 5000);
+        final card = await acct(
+          'Visa',
+          type: AccountType.creditCard,
+          paise: -30000,
+        );
 
-      var all = await list();
-      expect(totalBalancePaise(all), 105000);
-      expect(creditCardDuesPaise(all), 30000);
+        var all = await list();
+        expect(totalBalancePaise(all), 105000);
+        expect(creditCardDuesPaise(all), 30000);
 
-      await transfer(bank, card, 10000);
+        await transfer(bank, card, 10000);
 
-      all = await list();
-      expect(await balances(), {bank: 90000, cash: 5000, card: -20000});
-      expect(totalBalancePaise(all), 95000); // down by exactly 10000
-      expect(creditCardDuesPaise(all), 20000); // down by exactly 10000
-    });
+        all = await list();
+        expect(await balances(), {bank: 90000, cash: 5000, card: -20000});
+        expect(totalBalancePaise(all), 95000); // down by exactly 10000
+        expect(creditCardDuesPaise(all), 20000); // down by exactly 10000
+      },
+    );
 
-    test('transfer between two non-card accounts leaves the total unchanged', () async {
-      final a = await acct('Bank', paise: 100000);
-      final b = await acct('Wallet', type: AccountType.wallet, paise: 2500);
-      final before = totalBalancePaise(await list());
+    test(
+      'transfer between two non-card accounts leaves the total unchanged',
+      () async {
+        final a = await acct('Bank', paise: 100000);
+        final b = await acct('Wallet', type: AccountType.wallet, paise: 2500);
+        final before = totalBalancePaise(await list());
 
-      await transfer(a, b, 40000);
+        await transfer(a, b, 40000);
 
-      final after = totalBalancePaise(await list());
-      expect(after, before);
-      expect(await balances(), {a: 60000, b: 42500});
-    });
+        final after = totalBalancePaise(await list());
+        expect(after, before);
+        expect(await balances(), {a: 60000, b: 42500});
+      },
+    );
 
-    test('a card expense makes dues grow; paying it back shrinks them', () async {
-      final bank = await acct('Bank', paise: 100000);
-      final card = await acct('Visa', type: AccountType.creditCard);
+    test(
+      'a card expense makes dues grow; paying it back shrinks them',
+      () async {
+        final bank = await acct('Bank', paise: 100000);
+        final card = await acct('Visa', type: AccountType.creditCard);
 
-      await expense(card, 7000);
-      var all = await list();
-      expect(creditCardDuesPaise(all), 7000);
-      expect(totalBalancePaise(all), 100000);
+        await expense(card, 7000);
+        var all = await list();
+        expect(creditCardDuesPaise(all), 7000);
+        expect(totalBalancePaise(all), 100000);
 
-      await transfer(bank, card, 7000);
-      all = await list();
-      expect(creditCardDuesPaise(all), 0);
-      expect(totalBalancePaise(all), 93000);
-    });
+        await transfer(bank, card, 7000);
+        all = await list();
+        expect(creditCardDuesPaise(all), 0);
+        expect(totalBalancePaise(all), 93000);
+      },
+    );
 
     test('Rs 1,00,000.00 + 1 paise sum exactly', () async {
       final a = await acct('Big', paise: 10000000);
@@ -224,30 +233,33 @@ void main() {
   });
 
   group('update and delete', () {
-    test('update changes amount/account/type/date and balances follow', () async {
-      final a = await acct('Bank', paise: 100000);
-      final b = await acct('Cash', type: AccountType.cash);
-      final id = await expense(a, 5000);
-      expect(await balances(), {a: 95000, b: 0});
+    test(
+      'update changes amount/account/type/date and balances follow',
+      () async {
+        final a = await acct('Bank', paise: 100000);
+        final b = await acct('Cash', type: AccountType.cash);
+        final id = await expense(a, 5000);
+        expect(await balances(), {a: 95000, b: 0});
 
-      final earlier = DateTime(2026, 10, 1, 9, 30, 0);
-      await dao.update(
-        id,
-        accountId: b,
-        type: TransactionType.income,
-        amountPaise: 7000,
-        categoryId: await cat('inc_salary'),
-        occurredAt: earlier,
-      );
+        final earlier = DateTime(2026, 10, 1, 9, 30, 0);
+        await dao.update(
+          id,
+          accountId: b,
+          type: TransactionType.income,
+          amountPaise: 7000,
+          categoryId: await cat('inc_salary'),
+          occurredAt: earlier,
+        );
 
-      expect(await balances(), {a: 100000, b: 7000});
-      final row = (await dao.getById(id))!;
-      expect(row.accountId, b);
-      expect(row.type, TransactionType.income);
-      expect(row.amount, 7000);
-      expect(row.occurredAt.isAtSameMomentAs(earlier), isTrue);
-      expect(row.updatedAt.isAtSameMomentAs(now), isTrue);
-    });
+        expect(await balances(), {a: 100000, b: 7000});
+        final row = (await dao.getById(id))!;
+        expect(row.accountId, b);
+        expect(row.type, TransactionType.income);
+        expect(row.amount, 7000);
+        expect(row.occurredAt.isAtSameMomentAs(earlier), isTrue);
+        expect(row.updatedAt.isAtSameMomentAs(now), isTrue);
+      },
+    );
 
     test('update to a transfer and back', () async {
       final a = await acct('Bank', paise: 100000);
@@ -291,49 +303,52 @@ void main() {
       expect(await dao.getById(t1), isNull);
     });
 
-    test('update validates like insert and a failed update changes nothing', () async {
-      final a = await acct('Bank', paise: 100000);
-      final id = await expense(a, 5000, note: 'keep');
+    test(
+      'update validates like insert and a failed update changes nothing',
+      () async {
+        final a = await acct('Bank', paise: 100000);
+        final id = await expense(a, 5000, note: 'keep');
 
-      await expectLater(
-        dao.update(
-          id,
-          accountId: a,
-          type: TransactionType.expense,
-          amountPaise: 0,
-          categoryId: await cat('exp_food'),
-          occurredAt: now,
-        ),
-        fails(TransactionValidationError.invalidAmount),
-      );
-      await expectLater(
-        dao.update(
-          id,
-          accountId: a,
-          type: TransactionType.expense,
-          amountPaise: 100,
-          categoryId: await cat('inc_salary'),
-          occurredAt: now,
-        ),
-        fails(TransactionValidationError.categoryInvalid),
-      );
-      await expectLater(
-        dao.update(
-          id,
-          accountId: a,
-          type: TransactionType.expense,
-          amountPaise: 100,
-          categoryId: await cat('exp_food'),
-          occurredAt: DateTime(2026, 10, 18),
-        ),
-        fails(TransactionValidationError.futureDate),
-      );
+        await expectLater(
+          dao.update(
+            id,
+            accountId: a,
+            type: TransactionType.expense,
+            amountPaise: 0,
+            categoryId: await cat('exp_food'),
+            occurredAt: now,
+          ),
+          fails(TransactionValidationError.invalidAmount),
+        );
+        await expectLater(
+          dao.update(
+            id,
+            accountId: a,
+            type: TransactionType.expense,
+            amountPaise: 100,
+            categoryId: await cat('inc_salary'),
+            occurredAt: now,
+          ),
+          fails(TransactionValidationError.categoryInvalid),
+        );
+        await expectLater(
+          dao.update(
+            id,
+            accountId: a,
+            type: TransactionType.expense,
+            amountPaise: 100,
+            categoryId: await cat('exp_food'),
+            occurredAt: DateTime(2026, 10, 18),
+          ),
+          fails(TransactionValidationError.futureDate),
+        );
 
-      final row = (await dao.getById(id))!;
-      expect(row.amount, 5000);
-      expect(row.note, 'keep');
-      expect(await balances(), {a: 95000});
-    });
+        final row = (await dao.getById(id))!;
+        expect(row.amount, 5000);
+        expect(row.note, 'keep');
+        expect(await balances(), {a: 95000});
+      },
+    );
 
     test('unknown id gives notFound', () async {
       final a = await acct('Bank');
@@ -422,33 +437,30 @@ void main() {
         fails(TransactionValidationError.accountNotFound),
       );
       await expectLater(
-        tryInsert(
-          type: TransactionType.transfer,
-          toAccountId: 'nope',
-        ),
+        tryInsert(type: TransactionType.transfer, toAccountId: 'nope'),
         fails(TransactionValidationError.toAccountNotFound),
       );
       await expectLater(
-        tryInsert(
-          type: TransactionType.transfer,
-          toAccountId: foreign,
-        ),
+        tryInsert(type: TransactionType.transfer, toAccountId: foreign),
         fails(TransactionValidationError.toAccountNotFound),
       );
       expect(await txCount(), 0);
     });
 
-    test('a transfer needs a destination; income/expense must not have one', () async {
-      await expectLater(
-        tryInsert(type: TransactionType.transfer),
-        fails(TransactionValidationError.toAccountNotFound),
-      );
-      await expectLater(
-        tryInsert(toAccountId: b),
-        fails(TransactionValidationError.toAccountNotFound),
-      );
-      expect(await txCount(), 0);
-    });
+    test(
+      'a transfer needs a destination; income/expense must not have one',
+      () async {
+        await expectLater(
+          tryInsert(type: TransactionType.transfer),
+          fails(TransactionValidationError.toAccountNotFound),
+        );
+        await expectLater(
+          tryInsert(toAccountId: b),
+          fails(TransactionValidationError.toAccountNotFound),
+        );
+        expect(await txCount(), 0);
+      },
+    );
 
     test('a transfer to the same account is rejected', () async {
       await expectLater(
@@ -495,37 +507,40 @@ void main() {
       );
     });
 
-    test('category must exist, belong to the user, be active and match the type', () async {
-      // Unknown.
-      await expectLater(
-        tryInsert(categoryId: 'nope'),
-        fails(TransactionValidationError.categoryInvalid),
-      );
-      // Wrong kind, both ways.
-      await expectLater(
-        tryInsert(categoryId: salary),
-        fails(TransactionValidationError.categoryInvalid),
-      );
-      await expectLater(
-        tryInsert(type: TransactionType.income, categoryId: food),
-        fails(TransactionValidationError.categoryInvalid),
-      );
-      // Another user's category.
-      await seedDefaultCategories(db, 'other-user');
-      await expectLater(
-        tryInsert(categoryId: await cat('exp_food', user: 'other-user')),
-        fails(TransactionValidationError.categoryInvalid),
-      );
-      // Archived.
-      await (db.update(db.categories)..where((t) => t.id.equals(food))).write(
-        const CategoriesCompanion(isArchived: Value(true)),
-      );
-      await expectLater(
-        tryInsert(categoryId: food),
-        fails(TransactionValidationError.categoryInvalid),
-      );
-      expect(await txCount(), 0);
-    });
+    test(
+      'category must exist, belong to the user, be active and match the type',
+      () async {
+        // Unknown.
+        await expectLater(
+          tryInsert(categoryId: 'nope'),
+          fails(TransactionValidationError.categoryInvalid),
+        );
+        // Wrong kind, both ways.
+        await expectLater(
+          tryInsert(categoryId: salary),
+          fails(TransactionValidationError.categoryInvalid),
+        );
+        await expectLater(
+          tryInsert(type: TransactionType.income, categoryId: food),
+          fails(TransactionValidationError.categoryInvalid),
+        );
+        // Another user's category.
+        await seedDefaultCategories(db, 'other-user');
+        await expectLater(
+          tryInsert(categoryId: await cat('exp_food', user: 'other-user')),
+          fails(TransactionValidationError.categoryInvalid),
+        );
+        // Archived.
+        await (db.update(db.categories)..where((t) => t.id.equals(food))).write(
+          const CategoriesCompanion(isArchived: Value(true)),
+        );
+        await expectLater(
+          tryInsert(categoryId: food),
+          fails(TransactionValidationError.categoryInvalid),
+        );
+        expect(await txCount(), 0);
+      },
+    );
 
     test('a system category without a source is rejected', () async {
       final sys = await cat('sys_loan_given');
@@ -765,19 +780,22 @@ void main() {
   });
 
   group('balanceOutOfRange', () {
-    test('an expense past -maxPaise is rejected and nothing is written', () async {
-      final a = await acct('Deep', paise: -Money.maxPaise + 100);
+    test(
+      'an expense past -maxPaise is rejected and nothing is written',
+      () async {
+        final a = await acct('Deep', paise: -Money.maxPaise + 100);
 
-      await expense(a, 100); // exactly -maxPaise: allowed
-      expect((await balances())[a], -Money.maxPaise);
+        await expense(a, 100); // exactly -maxPaise: allowed
+        expect((await balances())[a], -Money.maxPaise);
 
-      await expectLater(
-        expense(a, 1),
-        fails(TransactionValidationError.balanceOutOfRange),
-      );
-      expect(await txCount(), 1);
-      expect((await balances())[a], -Money.maxPaise);
-    });
+        await expectLater(
+          expense(a, 1),
+          fails(TransactionValidationError.balanceOutOfRange),
+        );
+        expect(await txCount(), 1);
+        expect((await balances())[a], -Money.maxPaise);
+      },
+    );
 
     test('an income past +maxPaise is rejected', () async {
       final a = await acct('Full');
@@ -802,24 +820,27 @@ void main() {
       expect(await balances(), {from: 1000, to: Money.maxPaise});
     });
 
-    test('an update past the limit is rejected and the row is unchanged', () async {
-      final a = await acct('Near', paise: Money.maxPaise - 5);
-      final id = await income(a, 5); // exactly +maxPaise
+    test(
+      'an update past the limit is rejected and the row is unchanged',
+      () async {
+        final a = await acct('Near', paise: Money.maxPaise - 5);
+        final id = await income(a, 5); // exactly +maxPaise
 
-      await expectLater(
-        dao.update(
-          id,
-          accountId: a,
-          type: TransactionType.income,
-          amountPaise: 6,
-          categoryId: await cat('inc_salary'),
-          occurredAt: now,
-        ),
-        fails(TransactionValidationError.balanceOutOfRange),
-      );
-      expect((await dao.getById(id))!.amount, 5);
-      expect((await balances())[a], Money.maxPaise);
-    });
+        await expectLater(
+          dao.update(
+            id,
+            accountId: a,
+            type: TransactionType.income,
+            amountPaise: 6,
+            categoryId: await cat('inc_salary'),
+            occurredAt: now,
+          ),
+          fails(TransactionValidationError.balanceOutOfRange),
+        );
+        expect((await dao.getById(id))!.amount, 5);
+        expect((await balances())[a], Money.maxPaise);
+      },
+    );
 
     test('a delete that would leave the range is rejected', () async {
       final a = await acct('Edge', paise: -Money.maxPaise);
@@ -889,27 +910,30 @@ void main() {
       expect(row.sourceId, isNull);
     });
 
-    test('table and both indexes exist; transactions is in allTables', () async {
-      final rows = await db
-          .customSelect(
-            "SELECT name FROM sqlite_master WHERE tbl_name = 'transactions'",
-          )
-          .get();
-      final names = rows.map((r) => r.read<String>('name')).toSet();
-      expect(
-        names,
-        containsAll([
-          'transactions',
-          'transactions_user_date_idx',
-          'transactions_account_idx',
-        ]),
-      );
-      // The data export iterates allTables, so it picks the new table up.
-      expect(
-        db.allTables.map((t) => t.actualTableName),
-        contains('transactions'),
-      );
-    });
+    test(
+      'table and both indexes exist; transactions is in allTables',
+      () async {
+        final rows = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE tbl_name = 'transactions'",
+            )
+            .get();
+        final names = rows.map((r) => r.read<String>('name')).toSet();
+        expect(
+          names,
+          containsAll([
+            'transactions',
+            'transactions_user_date_idx',
+            'transactions_account_idx',
+          ]),
+        );
+        // The data export iterates allTables, so it picks the new table up.
+        expect(
+          db.allTables.map((t) => t.actualTableName),
+          contains('transactions'),
+        );
+      },
+    );
   });
 
   group('source guard', () {

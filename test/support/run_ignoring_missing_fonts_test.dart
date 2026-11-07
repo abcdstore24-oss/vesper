@@ -63,42 +63,46 @@ void main() {
   });
 
   group('runIgnoringMissingFonts', () {
-    test('(a) ignores the google_fonts exception, even from async work', () async {
-      final reached = await collectOuterErrors(() {
-        runIgnoringMissingFonts(() {
-          unawaited(
-            failLikeGoogleFonts(Exception(_missingFont)).then((_) {}),
-          );
-          unawaited(
-            Future<void>.delayed(
-              const Duration(milliseconds: 5),
-              () => throw Exception(_missingFont),
-            ),
-          );
+    test(
+      '(a) ignores the google_fonts exception, even from async work',
+      () async {
+        final reached = await collectOuterErrors(() {
+          runIgnoringMissingFonts(() {
+            unawaited(
+              failLikeGoogleFonts(Exception(_missingFont)).then((_) {}),
+            );
+            unawaited(
+              Future<void>.delayed(
+                const Duration(milliseconds: 5),
+                () => throw Exception(_missingFont),
+              ),
+            );
+          });
         });
-      });
 
-      expect(reached, isEmpty);
-    });
+        expect(reached, isEmpty);
+      },
+    );
 
-    test('(b) a StateError is NOT swallowed and reaches the outer zone', () async {
-      final error = StateError('boom');
-      final reached = await collectOuterErrors(() {
-        runIgnoringMissingFonts(() {
-          unawaited(failLikeGoogleFonts(error).then((_) {}));
+    test(
+      '(b) a StateError is NOT swallowed and reaches the outer zone',
+      () async {
+        final error = StateError('boom');
+        final reached = await collectOuterErrors(() {
+          runIgnoringMissingFonts(() {
+            unawaited(failLikeGoogleFonts(error).then((_) {}));
+          });
         });
-      });
 
-      expect(reached, hasLength(1));
-      expect(identical(reached.single, error), isTrue); // unchanged
-    });
+        expect(reached, hasLength(1));
+        expect(identical(reached.single, error), isTrue); // unchanged
+      },
+    );
 
     test('(b) a StateError with the font message is still reported', () async {
       final reached = await collectOuterErrors(() {
         runIgnoringMissingFonts(() {
-          unawaited(
-            failLikeGoogleFonts(StateError(_missingFont)).then((_) {}),
-          );
+          unawaited(failLikeGoogleFonts(StateError(_missingFont)).then((_) {}));
         });
       });
 
@@ -140,13 +144,9 @@ void main() {
       final real = StateError('real problem');
       final reached = await collectOuterErrors(() {
         runIgnoringMissingFonts(() {
-          unawaited(
-            failLikeGoogleFonts(Exception(_missingFont)).then((_) {}),
-          );
+          unawaited(failLikeGoogleFonts(Exception(_missingFont)).then((_) {}));
           unawaited(failLikeGoogleFonts(real).then((_) {}));
-          unawaited(
-            failLikeGoogleFonts(Exception(_missingFont)).then((_) {}),
-          );
+          unawaited(failLikeGoogleFonts(Exception(_missingFont)).then((_) {}));
         });
       });
 
@@ -154,15 +154,18 @@ void main() {
       expect(identical(reached.single, real), isTrue);
     });
 
-    test('a synchronous error in the body is reported, result is null', () async {
-      int? result = 123;
-      final reached = await collectOuterErrors(() {
-        result = runIgnoringMissingFonts<int>(() => throw StateError('sync'));
-      });
+    test(
+      'a synchronous error in the body is reported, result is null',
+      () async {
+        int? result = 123;
+        final reached = await collectOuterErrors(() {
+          result = runIgnoringMissingFonts<int>(() => throw StateError('sync'));
+        });
 
-      expect(result, isNull);
-      expect(reached.single, isA<StateError>());
-    });
+        expect(result, isNull);
+        expect(reached.single, isA<StateError>());
+      },
+    );
 
     test('returns the body\'s value when nothing goes wrong', () {
       expect(runIgnoringMissingFonts(() => 42), 42);

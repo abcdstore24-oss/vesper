@@ -152,7 +152,9 @@ void main() {
   });
 
   testWidgets('150 items: only a few rows are built (lazy)', (tester) async {
-    final titles = [for (var i = 0; i < 150; i++) 'Item ${i.toString().padLeft(3, '0')}'];
+    final titles = [
+      for (var i = 0; i < 150; i++) 'Item ${i.toString().padLeft(3, '0')}',
+    ];
     await openPicker(
       tester,
       items: _items(titles),

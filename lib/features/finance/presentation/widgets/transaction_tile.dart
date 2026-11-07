@@ -7,9 +7,9 @@ import '../../data/transaction_queries.dart';
 import '../transaction_display.dart';
 
 /// One transaction as a descriptive row: icon circle, title, subtitle, and a
-/// right column with the amount and, under it, the date. Not tappable
-/// (editing comes later). Named TransactionTile because TransactionRow is
-/// Drift's data class.
+/// right column with the amount and, under it, the date (unless [showDate] is
+/// false). Not tappable (editing comes later). Named TransactionTile because
+/// TransactionRow is Drift's data class.
 ///
 /// The title and subtitle wrap to at most two lines (ellipsis after that).
 /// The right column takes at most half the row; the amount and the date are
@@ -17,12 +17,21 @@ import '../transaction_display.dart';
 ///
 /// Registered in COMPONENTS.md.
 class TransactionTile extends StatelessWidget {
-  const TransactionTile({super.key, required this.item, this.now});
+  const TransactionTile({
+    super.key,
+    required this.item,
+    this.now,
+    this.showDate = true,
+  });
 
   final TransactionListItem item;
 
   /// For tests: decides "Today" / "Yesterday" in the subtitle.
   final DateTime? now;
+
+  /// Show the date label under the amount. The full Transactions list passes
+  /// false because its date header already carries the date.
+  final bool showDate;
 
   @override
   Widget build(BuildContext context) {
@@ -94,18 +103,19 @@ class TransactionTile extends StatelessWidget {
                       tone: display.tone,
                       alignment: Alignment.centerRight,
                     ),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        display.dateLabel,
-                        maxLines: 1,
-                        softWrap: false,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                    if (showDate)
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          display.dateLabel,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),

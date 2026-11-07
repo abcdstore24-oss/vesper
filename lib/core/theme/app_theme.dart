@@ -241,9 +241,7 @@ class AppTheme {
           headlineLarge: AppTypography.headlineLarge.copyWith(
             color: c.textPrimary,
           ),
-          titleMedium: AppTypography.titleMedium.copyWith(
-            color: c.textPrimary,
-          ),
+          titleMedium: AppTypography.titleMedium.copyWith(color: c.textPrimary),
           bodyLarge: AppTypography.bodyLarge.copyWith(color: c.textPrimary),
           bodyMedium: AppTypography.bodyMedium.copyWith(color: c.textPrimary),
           labelLarge: AppTypography.labelLarge.copyWith(color: c.textPrimary),

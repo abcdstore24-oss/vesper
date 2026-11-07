@@ -73,7 +73,8 @@ ORDER BY a.created_at ASC, a.name ASC''';
           Variable.withString(userId),
           Variable.withString(userId),
           Variable.withString(userId),
-          if (ids != null) for (final id in ids) Variable.withString(id),
+          if (ids != null)
+            for (final id in ids) Variable.withString(id),
         ],
         readsFrom: {db.accounts, db.transactions},
       )

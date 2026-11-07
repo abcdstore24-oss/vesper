@@ -28,9 +28,9 @@ class DashboardScreen extends ConsumerWidget {
           IconButton(
             icon: Icon(PhosphorIconsRegular.gearSix),
             tooltip: 'Settings',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
         ],
       ),
@@ -105,11 +105,7 @@ class DashboardScreen extends ConsumerWidget {
 
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
-        final bday = DateTime(
-          birthdate.year,
-          birthdate.month,
-          birthdate.day,
-        );
+        final bday = DateTime(birthdate.year, birthdate.month, birthdate.day);
         final age = _calculateAge(bday, today);
         final daysUntil = _daysUntilNextBirthday(bday, today);
         final dayWord = daysUntil == 1 ? 'day' : 'days';

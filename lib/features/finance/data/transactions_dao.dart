@@ -222,6 +222,17 @@ class TransactionsDao {
     return selectRecentTransactions(_db, userId: userId, limit: limit).watch();
   }
 
+  /// Watches ALL of [userId]'s transactions, newest first, optionally only
+  /// those of [type] (null = every type; filtered in SQL). No limit: the UI
+  /// builds its list lazily. Re-emits when transactions, categories or
+  /// accounts change.
+  Stream<List<TransactionListItem>> watchAll(
+    String userId, {
+    TransactionType? type,
+  }) {
+    return selectRecentTransactions(_db, userId: userId, type: type).watch();
+  }
+
   Future<TransactionRow?> getById(String id) {
     return (_db.select(
       _db.transactions,

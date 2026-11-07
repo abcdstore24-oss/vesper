@@ -27,9 +27,7 @@ extension RemoteStatusCacheDao on AppDatabase {
 /// Raw watch of the local cache row. Prefer [effectiveRemoteStatusProvider]
 /// in UI code — this is exposed mainly for anything that needs
 /// `lastCheckedAt` specifically (e.g. a future "last synced" label).
-final remoteStatusCacheProvider = StreamProvider<RemoteStatusCacheRow?>((
-  ref,
-) {
+final remoteStatusCacheProvider = StreamProvider<RemoteStatusCacheRow?>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return db.watchRemoteStatus();
 });

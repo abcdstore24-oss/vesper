@@ -28,19 +28,22 @@ void main() {
       expect(d.dateLabel, 'Today');
     });
 
-    test('no note: the category is the title and is dropped from the subtitle', () {
-      final d = transactionDisplay(
-        makeTransactionItem(
-          categoryName: 'Groceries',
-          accountName: 'Cash',
-          occurredAt: yesterday,
-        ),
-        now: now,
-      );
-      expect(d.title, 'Groceries');
-      expect(d.subtitle, 'Cash');
-      expect(d.dateLabel, 'Yesterday');
-    });
+    test(
+      'no note: the category is the title and is dropped from the subtitle',
+      () {
+        final d = transactionDisplay(
+          makeTransactionItem(
+            categoryName: 'Groceries',
+            accountName: 'Cash',
+            occurredAt: yesterday,
+          ),
+          now: now,
+        );
+        expect(d.title, 'Groceries');
+        expect(d.subtitle, 'Cash');
+        expect(d.dateLabel, 'Yesterday');
+      },
+    );
 
     test('a blank note counts as no note', () {
       final d = transactionDisplay(

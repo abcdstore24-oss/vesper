@@ -19,7 +19,9 @@ void main() {
     return pumpUi(
       tester,
       Scaffold(
-        body: Center(child: SizedBox(width: width, child: amount)),
+        body: Center(
+          child: SizedBox(width: width, child: amount),
+        ),
       ),
       brightness: brightness,
     );
@@ -69,11 +71,7 @@ void main() {
   testWidgets('a narrow space shrinks the amount instead of overflowing', (
     tester,
   ) async {
-    await pumpAmount(
-      tester,
-      const AmountText(Money.maxPaise),
-      width: 60,
-    );
+    await pumpAmount(tester, const AmountText(Money.maxPaise), width: 60);
 
     expect(tester.takeException(), isNull);
     expect(tester.getSize(find.byType(FittedBox)).width, lessThanOrEqualTo(60));

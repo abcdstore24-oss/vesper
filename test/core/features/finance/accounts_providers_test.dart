@@ -11,82 +11,76 @@ import '../../../support/test_db.dart';
 
 void main() {
   group('accountsWithBalanceProvider', () {
-    test(
-      'FIRST LAUNCH: an account added on a fresh install shows up in the '
-      'same listener without recreating the container',
-      () async {
-        final container = makeInMemoryContainer();
-        final db = container.read(appDatabaseProvider);
+    test('FIRST LAUNCH: an account added on a fresh install shows up in the '
+        'same listener without recreating the container', () async {
+      final container = makeInMemoryContainer();
+      final db = container.read(appDatabaseProvider);
 
-        // Fresh database and NO bootstrap: no user row, no categories.
-        expect(await db.select(db.userProfile).get(), isEmpty);
-        expect(await db.select(db.categories).get(), isEmpty);
+      // Fresh database and NO bootstrap: no user row, no categories.
+      expect(await db.select(db.userProfile).get(), isEmpty);
+      expect(await db.select(db.categories).get(), isEmpty);
 
-        final emissions = <List<AccountWithBalance>>[];
-        final errors = <Object>[];
-        final subscription = container
-            .listen<AsyncValue<List<AccountWithBalance>>>(
-              accountsWithBalanceProvider,
-              (previous, next) {
-                if (next.hasValue) emissions.add(next.requireValue);
-                if (next.hasError) errors.add(next.error!);
-              },
-              fireImmediately: true,
-            );
-        addTearDown(subscription.close);
+      final emissions = <List<AccountWithBalance>>[];
+      final errors = <Object>[];
+      final subscription = container
+          .listen<AsyncValue<List<AccountWithBalance>>>(
+            accountsWithBalanceProvider,
+            (previous, next) {
+              if (next.hasValue) emissions.add(next.requireValue);
+              if (next.hasError) errors.add(next.error!);
+            },
+            fireImmediately: true,
+          );
+      addTearDown(subscription.close);
 
-        // 1. Starts empty.
-        await pumpUntil(() => emissions.isNotEmpty);
-        expect(emissions.last, isEmpty);
+      // 1. Starts empty.
+      await pumpUntil(() => emissions.isNotEmpty);
+      expect(emissions.last, isEmpty);
 
-        // 2. First account, created with the id from localUserIdProvider.
-        final userId = await container.read(localUserIdProvider.future);
-        final dao = AccountsDao(db);
-        await dao.insert(
-          userId: userId,
-          name: 'Cash',
-          type: AccountType.cash,
-          startingBalancePaise: 50000,
-        );
+      // 2. First account, created with the id from localUserIdProvider.
+      final userId = await container.read(localUserIdProvider.future);
+      final dao = AccountsDao(db);
+      await dao.insert(
+        userId: userId,
+        name: 'Cash',
+        type: AccountType.cash,
+        startingBalancePaise: 50000,
+      );
 
-        // The SAME listener must receive it (no restart, no new container).
-        await pumpUntil(() => emissions.last.length == 1);
-        expect(emissions.last.single.account.name, 'Cash');
-        expect(emissions.last.single.balancePaise, 50000);
-        expect(container.read(totalBalanceProvider).value, 50000);
+      // The SAME listener must receive it (no restart, no new container).
+      await pumpUntil(() => emissions.last.length == 1);
+      expect(emissions.last.single.account.name, 'Cash');
+      expect(emissions.last.single.balancePaise, 50000);
+      expect(container.read(totalBalanceProvider).value, 50000);
 
-        // 3. Second insert, same listener again.
-        await dao.insert(
-          userId: userId,
-          name: 'Visa',
-          type: AccountType.creditCard,
-          startingBalancePaise: -12000,
-        );
-        await pumpUntil(() => emissions.last.length == 2);
-        expect(emissions.last.map((a) => a.account.name), ['Cash', 'Visa']);
-        expect(emissions.last.map((a) => a.balancePaise), [50000, -12000]);
-        // The card is NOT in Total Balance; it shows up as card dues.
-        await pumpUntil(
-          () => container.read(creditCardDuesProvider).value == 12000,
-        );
-        expect(container.read(totalBalanceProvider).value, 50000);
+      // 3. Second insert, same listener again.
+      await dao.insert(
+        userId: userId,
+        name: 'Visa',
+        type: AccountType.creditCard,
+        startingBalancePaise: -12000,
+      );
+      await pumpUntil(() => emissions.last.length == 2);
+      expect(emissions.last.map((a) => a.account.name), ['Cash', 'Visa']);
+      expect(emissions.last.map((a) => a.balancePaise), [50000, -12000]);
+      // The card is NOT in Total Balance; it shows up as card dues.
+      await pumpUntil(
+        () => container.read(creditCardDuesProvider).value == 12000,
+      );
+      expect(container.read(totalBalanceProvider).value, 50000);
 
-        // 4. Updates flow through the same stream too.
-        await dao.update(
-          emissions.last.first.account.id,
-          name: 'Pocket cash',
-        );
-        await pumpUntil(
-          () => emissions.last.any((a) => a.account.name == 'Pocket cash'),
-        );
+      // 4. Updates flow through the same stream too.
+      await dao.update(emissions.last.first.account.id, name: 'Pocket cash');
+      await pumpUntil(
+        () => emissions.last.any((a) => a.account.name == 'Pocket cash'),
+      );
 
-        expect(errors, isEmpty);
-        expect(identical(container.read(appDatabaseProvider), db), isTrue);
+      expect(errors, isEmpty);
+      expect(identical(container.read(appDatabaseProvider), db), isTrue);
 
-        // Exactly one local user row was created, by the provider.
-        expect(await db.select(db.userProfile).get(), hasLength(1));
-      },
-    );
+      // Exactly one local user row was created, by the provider.
+      expect(await db.select(db.userProfile).get(), hasLength(1));
+    });
 
     test('a different user\'s accounts never appear', () async {
       final container = makeInMemoryContainer();
@@ -134,7 +128,9 @@ void main() {
         startingBalancePaise: 1,
       );
 
-      await pumpUntil(() => container.read(totalBalanceProvider).value == 10000001);
+      await pumpUntil(
+        () => container.read(totalBalanceProvider).value == 10000001,
+      );
     });
   });
 
@@ -182,26 +178,29 @@ void main() {
   });
 
   group('localUserIdProvider', () {
-    test('returns the same id on every read, with one user_profile row', () async {
-      final container = makeInMemoryContainer();
-      final db = container.read(appDatabaseProvider);
+    test(
+      'returns the same id on every read, with one user_profile row',
+      () async {
+        final container = makeInMemoryContainer();
+        final db = container.read(appDatabaseProvider);
 
-      final first = await container.read(localUserIdProvider.future);
-      final second = await container.read(localUserIdProvider.future);
-      expect(first, isNotEmpty);
-      expect(second, first);
-      expect(await db.select(db.userProfile).get(), hasLength(1));
+        final first = await container.read(localUserIdProvider.future);
+        final second = await container.read(localUserIdProvider.future);
+        expect(first, isNotEmpty);
+        expect(second, first);
+        expect(await db.select(db.userProfile).get(), hasLength(1));
 
-      // Re-running the provider (as after a restart of just this provider)
-      // finds the existing row; it never makes a second one.
-      container.invalidate(localUserIdProvider);
-      final third = await container.read(localUserIdProvider.future);
-      expect(third, first);
+        // Re-running the provider (as after a restart of just this provider)
+        // finds the existing row; it never makes a second one.
+        container.invalidate(localUserIdProvider);
+        final third = await container.read(localUserIdProvider.future);
+        expect(third, first);
 
-      final rows = await db.select(db.userProfile).get();
-      expect(rows, hasLength(1));
-      expect(rows.single.userId, first);
-    });
+        final rows = await db.select(db.userProfile).get();
+        expect(rows, hasLength(1));
+        expect(rows.single.userId, first);
+      },
+    );
 
     test('returns the id of an existing user_profile row', () async {
       final container = makeInMemoryContainer();
@@ -211,10 +210,7 @@ void main() {
         "VALUES ('p1', 'existing-user', 1700000000, 1700000000)",
       );
 
-      expect(
-        await container.read(localUserIdProvider.future),
-        'existing-user',
-      );
+      expect(await container.read(localUserIdProvider.future), 'existing-user');
       expect(await db.select(db.userProfile).get(), hasLength(1));
     });
   });

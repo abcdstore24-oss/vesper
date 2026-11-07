@@ -38,89 +38,89 @@ void main() {
     await db.close();
   });
 
-  test('v2 -> v4 adds accounts + transactions with their indexes and keeps every old row', () async {
-    final ddl = await generatedV2Ddl();
-    expect(ddl, hasLength(4));
-    expect(ddl.any((s) => s.contains('accounts')), isFalse);
+  test(
+    'v2 -> v4 adds accounts + transactions with their indexes and keeps every old row',
+    () async {
+      final ddl = await generatedV2Ddl();
+      expect(ddl, hasLength(4));
+      expect(ddl.any((s) => s.contains('accounts')), isFalse);
 
-    db = AppDatabase(
-      NativeDatabase.memory(
-        setup: (raw) {
-          for (final statement in ddl) {
-            raw.execute(statement);
-          }
-          raw.execute(
-            "INSERT INTO user_profile (id, user_id, display_name, "
-            "created_at, updated_at) VALUES "
-            "('p1', 'old-user', 'Asha', 1700000000, 1700000000)",
-          );
-          raw.execute(
-            "INSERT INTO remote_status_cache (id, kill_switch) "
-            "VALUES ('r1', 0)",
-          );
-          raw.execute(
-            "INSERT INTO categories (id, user_id, name, icon, color, kind, "
-            "seed_key, created_at, updated_at) VALUES "
-            "('c1', 'old-user', 'Eating out', 'fork_knife', 4291132292, "
-            "'expense', 'exp_food', 1700000000, 1700000000), "
-            "('c2', 'old-user', 'Pet care', 'paw_print', 4279312947, "
-            "'expense', NULL, 1700000000, 1700000000)",
-          );
-          raw.execute('PRAGMA user_version = 2');
-        },
-      ),
-    );
+      db = AppDatabase(
+        NativeDatabase.memory(
+          setup: (raw) {
+            for (final statement in ddl) {
+              raw.execute(statement);
+            }
+            raw.execute(
+              "INSERT INTO user_profile (id, user_id, display_name, "
+              "created_at, updated_at) VALUES "
+              "('p1', 'old-user', 'Asha', 1700000000, 1700000000)",
+            );
+            raw.execute(
+              "INSERT INTO remote_status_cache (id, kill_switch) "
+              "VALUES ('r1', 0)",
+            );
+            raw.execute(
+              "INSERT INTO categories (id, user_id, name, icon, color, kind, "
+              "seed_key, created_at, updated_at) VALUES "
+              "('c1', 'old-user', 'Eating out', 'fork_knife', 4291132292, "
+              "'expense', 'exp_food', 1700000000, 1700000000), "
+              "('c2', 'old-user', 'Pet care', 'paw_print', 4279312947, "
+              "'expense', NULL, 1700000000, 1700000000)",
+            );
+            raw.execute('PRAGMA user_version = 2');
+          },
+        ),
+      );
 
-    // First query opens the database and runs the v2 -> v4 upgrade
-    // (from < 3, then from < 4).
-    expect(await db.select(db.accounts).get(), isEmpty);
+      // First query opens the database and runs the v2 -> v4 upgrade
+      // (from < 3, then from < 4).
+      expect(await db.select(db.accounts).get(), isEmpty);
 
-    // Old rows survived untouched.
-    final profile = await db.select(db.userProfile).getSingle();
-    expect(profile.id, 'p1');
-    expect(profile.userId, 'old-user');
-    expect(profile.displayName, 'Asha');
-    expect(await db.select(db.remoteStatusCache).get(), hasLength(1));
-    final categories = await db.select(db.categories).get();
-    expect(categories.map((c) => c.id).toSet(), {'c1', 'c2'});
-    expect(
-      categories.firstWhere((c) => c.id == 'c1').name,
-      'Eating out',
-    );
+      // Old rows survived untouched.
+      final profile = await db.select(db.userProfile).getSingle();
+      expect(profile.id, 'p1');
+      expect(profile.userId, 'old-user');
+      expect(profile.displayName, 'Asha');
+      expect(await db.select(db.remoteStatusCache).get(), hasLength(1));
+      final categories = await db.select(db.categories).get();
+      expect(categories.map((c) => c.id).toSet(), {'c1', 'c2'});
+      expect(categories.firstWhere((c) => c.id == 'c1').name, 'Eating out');
 
-    // New table and index exist; the old index is still there.
-    final schema = await db
-        .customSelect('SELECT name FROM sqlite_master')
-        .get();
-    final names = schema.map((r) => r.read<String>('name')).toSet();
-    expect(names, containsAll(['accounts', 'accounts_user_idx']));
-    expect(names, contains('categories_user_kind_idx'));
-    expect(
-      names,
-      containsAll([
-        'transactions',
-        'transactions_user_date_idx',
-        'transactions_account_idx',
-      ]),
-    );
-    expect(await db.select(db.transactions).get(), isEmpty);
+      // New table and index exist; the old index is still there.
+      final schema = await db
+          .customSelect('SELECT name FROM sqlite_master')
+          .get();
+      final names = schema.map((r) => r.read<String>('name')).toSet();
+      expect(names, containsAll(['accounts', 'accounts_user_idx']));
+      expect(names, contains('categories_user_kind_idx'));
+      expect(
+        names,
+        containsAll([
+          'transactions',
+          'transactions_user_date_idx',
+          'transactions_account_idx',
+        ]),
+      );
+      expect(await db.select(db.transactions).get(), isEmpty);
 
-    final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 4);
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
+      expect(version.read<int>('user_version'), 4);
 
-    // The new table is usable.
-    final id = await AccountsDao(db).insert(
-      userId: 'old-user',
-      name: 'Cash',
-      type: AccountType.cash,
-      startingBalancePaise: 1000,
-    );
-    expect((await AccountsDao(db).getById(id))!.name, 'Cash');
+      // The new table is usable.
+      final id = await AccountsDao(db).insert(
+        userId: 'old-user',
+        name: 'Cash',
+        type: AccountType.cash,
+        startingBalancePaise: 1000,
+      );
+      expect((await AccountsDao(db).getById(id))!.name, 'Cash');
 
-    // Bootstrap after the upgrade adds only the missing seeds: the renamed
-    // built-in c1 is found (not recreated) and the user-made c2 is kept.
-    await ensureBaselineData(db);
-    expect(await db.select(db.categories).get(), hasLength(2 + 26 - 1));
-    expect(await db.select(db.userProfile).get(), hasLength(1));
-  });
+      // Bootstrap after the upgrade adds only the missing seeds: the renamed
+      // built-in c1 is found (not recreated) and the user-made c2 is kept.
+      await ensureBaselineData(db);
+      expect(await db.select(db.categories).get(), hasLength(2 + 26 - 1));
+      expect(await db.select(db.userProfile).get(), hasLength(1));
+    },
+  );
 }

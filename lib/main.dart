@@ -60,7 +60,9 @@ Future<void> main() async {
   // widget tree must share this exact container, so appDatabaseProvider
   // resolves to the same AppDatabase we just queried above, not a
   // second instance.
-  runApp(UncontrolledProviderScope(container: container, child: const VesperApp()));
+  runApp(
+    UncontrolledProviderScope(container: container, child: const VesperApp()),
+  );
 }
 
 class VesperApp extends ConsumerStatefulWidget {
@@ -183,8 +185,9 @@ class _LockOverlayState extends ConsumerState<_LockOverlay>
       // then floats over KillSwitchScreen once this subtree gets
       // unmounted. See lock_screen.dart's ref.listen for the mid-
       // prompt case (kill switch flips true while already locked).
-      final killSwitchAlreadyActive =
-          ref.read(effectiveRemoteStatusProvider).killSwitch;
+      final killSwitchAlreadyActive = ref
+          .read(effectiveRemoteStatusProvider)
+          .killSwitch;
       if (!killSwitchAlreadyActive &&
           ref.read(appLockModeProvider) != AppLockMode.off) {
         ref.read(isUnlockedProvider.notifier).lock();

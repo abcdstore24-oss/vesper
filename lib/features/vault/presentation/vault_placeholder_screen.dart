@@ -6,6 +6,5 @@ class VaultPlaceholderScreen extends StatelessWidget {
   const VaultPlaceholderScreen({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      const PlaceholderScreen(title: 'Vault');
+  Widget build(BuildContext context) => const PlaceholderScreen(title: 'Vault');
 }

@@ -6,6 +6,5 @@ class GoalsPlaceholderScreen extends StatelessWidget {
   const GoalsPlaceholderScreen({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      const PlaceholderScreen(title: 'Goals');
+  Widget build(BuildContext context) => const PlaceholderScreen(title: 'Goals');
 }

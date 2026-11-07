@@ -29,7 +29,9 @@ String generateId() {
   final timeLow = hex(4);
   final timeMid = hex(2);
   final timeHiAndVersion = '4${hex(2).substring(1)}'; // version 4
-  final variantByte = (random.nextInt(64) + 128).toRadixString(16); // variant 10xx
+  final variantByte = (random.nextInt(64) + 128).toRadixString(
+    16,
+  ); // variant 10xx
   final clockSeq = '$variantByte${hex(1)}';
   final node = hex(6);
 
@@ -102,8 +104,7 @@ class RemoteStatusCache extends Table {
   // treated as blocked — matching API.md's offline-safe rule ("absence
   // of a successful check = fall back to cached status = normal
   // operation"). See task response flag #4.
-  BoolColumn get lastKnownGood =>
-      boolean().withDefault(const Constant(true))();
+  BoolColumn get lastKnownGood => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column> get primaryKey => {id};

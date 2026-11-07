@@ -35,10 +35,9 @@ class AppLockModeNotifier extends Notifier<AppLockMode> {
   }
 }
 
-final appLockModeProvider =
-    NotifierProvider<AppLockModeNotifier, AppLockMode>(
-      AppLockModeNotifier.new,
-    );
+final appLockModeProvider = NotifierProvider<AppLockModeNotifier, AppLockMode>(
+  AppLockModeNotifier.new,
+);
 
 /// Whether the app is unlocked THIS SESSION only. Always starts false
 /// on a fresh process — deliberately never persisted, so a real cold

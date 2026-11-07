@@ -98,7 +98,8 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _AccountRow extends StatelessWidget {
-  _AccountRow({required this.item}) : super(key: ValueKey('account-row-${item.account.id}'));
+  _AccountRow({required this.item})
+    : super(key: ValueKey('account-row-${item.account.id}'));
 
   final AccountWithBalance item;
 

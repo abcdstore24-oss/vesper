@@ -8,6 +8,7 @@ import '../../data/categories_table.dart';
 import '../../data/category_queries.dart';
 import '../../data/transaction_queries.dart';
 import '../../data/transactions_dao.dart';
+import '../../data/transactions_table.dart';
 import 'accounts_providers.dart';
 
 /// The current user's most recent transactions (5), newest first, with the
@@ -23,6 +24,19 @@ final recentTransactionsProvider = StreamProvider<List<TransactionListItem>>((
   final userId = await ref.watch(localUserIdProvider.future);
   yield* TransactionsDao(db).watchRecent(userId);
 });
+
+/// ALL of the current user's transactions, newest first, optionally only one
+/// [TransactionType] (the family key; null = All). The filter runs in SQL.
+///
+/// autoDispose: a stream over every row should not stay alive after the
+/// Transactions screen (or the chip) is left. Same awaited-user pattern as
+/// recentTransactionsProvider.
+final allTransactionsProvider = StreamProvider.autoDispose
+    .family<List<TransactionListItem>, TransactionType?>((ref, type) async* {
+      final db = ref.watch(appDatabaseProvider);
+      final userId = await ref.watch(localUserIdProvider.future);
+      yield* TransactionsDao(db).watchAll(userId, type: type);
+    });
 
 /// The user's ACTIVE (non-archived) categories of a kind, A-Z by name.
 final categoriesByKindProvider =

@@ -21,7 +21,9 @@ void main() {
       testWidgets('dividers use the border token (not near-white)', (
         tester,
       ) async {
-        final theme = buildTestTheme(isDark ? Brightness.dark : Brightness.light);
+        final theme = buildTestTheme(
+          isDark ? Brightness.dark : Brightness.light,
+        );
 
         expect(theme.dividerTheme.color, palette.border);
         expect(theme.dividerTheme.thickness, 1);
@@ -32,7 +34,9 @@ void main() {
       testWidgets('bottom sheets: surface, drag handle, 20px top corners', (
         tester,
       ) async {
-        final theme = buildTestTheme(isDark ? Brightness.dark : Brightness.light);
+        final theme = buildTestTheme(
+          isDark ? Brightness.dark : Brightness.light,
+        );
 
         final sheet = theme.bottomSheetTheme;
         expect(sheet.backgroundColor, palette.surface);
@@ -52,7 +56,9 @@ void main() {
       testWidgets('chips: pill, border, no checkmark, accent when selected', (
         tester,
       ) async {
-        final theme = buildTestTheme(isDark ? Brightness.dark : Brightness.light);
+        final theme = buildTestTheme(
+          isDark ? Brightness.dark : Brightness.light,
+        );
 
         final chip = theme.chipTheme;
         expect(chip.backgroundColor, palette.surfaceVariant);

@@ -80,7 +80,12 @@ void main() {
             type: AccountType.bank,
             balance: -50000,
           ),
-          makeAccount(id: 'ok', name: 'Cash', type: AccountType.cash, balance: 700),
+          makeAccount(
+            id: 'ok',
+            name: 'Cash',
+            type: AccountType.cash,
+            balance: 700,
+          ),
         ]),
       ],
     );
@@ -92,7 +97,10 @@ void main() {
     expect(within('owed', find.text('\u20B91,200.50')), findsOneWidget);
     expect(within('owed', find.text('due')), findsOneWidget);
     expect(
-      tester.widget<Text>(within('owed', find.text('\u20B91,200.50'))).style?.color,
+      tester
+          .widget<Text>(within('owed', find.text('\u20B91,200.50')))
+          .style
+          ?.color,
       AppColors.light.danger,
     );
 
@@ -100,14 +108,20 @@ void main() {
     expect(within('over', find.text('\u20B950.00')), findsOneWidget);
     expect(within('over', find.text('credit')), findsOneWidget);
     expect(
-      tester.widget<Text>(within('over', find.text('\u20B950.00'))).style?.color,
+      tester
+          .widget<Text>(within('over', find.text('\u20B950.00')))
+          .style
+          ?.color,
       AppColors.light.success,
     );
 
     // Non-card negative: minus sign, danger, no caption.
     expect(within('od', find.text('-\u20B9500.00')), findsOneWidget);
     expect(
-      tester.widget<Text>(within('od', find.text('-\u20B9500.00'))).style?.color,
+      tester
+          .widget<Text>(within('od', find.text('-\u20B9500.00')))
+          .style
+          ?.color,
       AppColors.light.danger,
     );
     expect(within('od', find.text('due')), findsNothing);
@@ -165,7 +179,9 @@ void main() {
     await pumpUi(
       tester,
       const AccountsScreen(),
-      overrides: [accountsOverride([makeAccount()])],
+      overrides: [
+        accountsOverride([makeAccount()]),
+      ],
     );
 
     expect(find.byTooltip('Add account'), findsOneWidget);
@@ -181,7 +197,9 @@ void main() {
       tester,
       const AccountsScreen(),
       overrides: [
-        accountsOverride([makeAccount(id: 'a', name: 'Savings', balance: 125050)]),
+        accountsOverride([
+          makeAccount(id: 'a', name: 'Savings', balance: 125050),
+        ]),
       ],
     );
 

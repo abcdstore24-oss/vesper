@@ -72,9 +72,9 @@ class FinanceHomeScreen extends StatelessWidget {
                 PhosphorIconsRegular.caretRight,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AccountsScreen()),
-              ),
+              onTap: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const AccountsScreen())),
             ),
           ),
         ],

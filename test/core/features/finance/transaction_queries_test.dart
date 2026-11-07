@@ -126,20 +126,23 @@ void main() {
     ]);
   });
 
-  test('rows in the same second come out newest-first (rowid tiebreak)', () async {
-    final same = DateTime(2026, 10, 17, 9, 15, 30);
-    for (var i = 1; i <= 4; i++) {
-      await expense(note: 'same$i', at: same);
-    }
+  test(
+    'rows in the same second come out newest-first (rowid tiebreak)',
+    () async {
+      final same = DateTime(2026, 10, 17, 9, 15, 30);
+      for (var i = 1; i <= 4; i++) {
+        await expense(note: 'same$i', at: same);
+      }
 
-    final items = await recent();
-    expect(items.map((i) => i.transaction.note), [
-      'same4',
-      'same3',
-      'same2',
-      'same1',
-    ]);
-  });
+      final items = await recent();
+      expect(items.map((i) => i.transaction.note), [
+        'same4',
+        'same3',
+        'same2',
+        'same1',
+      ]);
+    },
+  );
 
   test('other users\' transactions are excluded', () async {
     await expense(note: 'mine');
@@ -171,23 +174,26 @@ void main() {
     expect(theirs.map((i) => i.transaction.note), ['theirs']);
   });
 
-  test('the stream re-emits on insert and when an account is renamed', () async {
-    final emissions = <List<TransactionListItem>>[];
-    final subscription = dao.watchRecent(userId).listen(emissions.add);
-    addTearDown(subscription.cancel);
+  test(
+    'the stream re-emits on insert and when an account is renamed',
+    () async {
+      final emissions = <List<TransactionListItem>>[];
+      final subscription = dao.watchRecent(userId).listen(emissions.add);
+      addTearDown(subscription.cancel);
 
-    await pumpUntil(() => emissions.isNotEmpty);
-    expect(emissions.last, isEmpty);
+      await pumpUntil(() => emissions.isNotEmpty);
+      expect(emissions.last, isEmpty);
 
-    await expense(note: 'first');
-    await pumpUntil(() => emissions.last.length == 1);
-    expect(emissions.last.single.transaction.note, 'first');
+      await expense(note: 'first');
+      await pumpUntil(() => emissions.last.length == 1);
+      expect(emissions.last.single.transaction.note, 'first');
 
-    await expense(note: 'second');
-    await pumpUntil(() => emissions.last.length == 2);
-    expect(emissions.last.first.transaction.note, 'second');
+      await expense(note: 'second');
+      await pumpUntil(() => emissions.last.length == 2);
+      expect(emissions.last.first.transaction.note, 'second');
 
-    await accounts.update(bank, name: 'Renamed bank');
-    await pumpUntil(() => emissions.last.first.accountName == 'Renamed bank');
-  });
+      await accounts.update(bank, name: 'Renamed bank');
+      await pumpUntil(() => emissions.last.first.accountName == 'Renamed bank');
+    },
+  );
 }

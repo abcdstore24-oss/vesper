@@ -77,7 +77,9 @@ void main() {
       expect(find.byType(AccountFormSheet), findsOneWidget);
     });
 
-    testWidgets('"12,50" is rejected, not read as 1,250 rupees', (tester) async {
+    testWidgets('"12,50" is rejected, not read as 1,250 rupees', (
+      tester,
+    ) async {
       await openSheet(tester);
 
       await tester.enterText(_nameField, 'Cash');
@@ -144,9 +146,7 @@ void main() {
 
     Future<List<AccountRow>> allAccounts(WidgetTester tester) async {
       final id = await userId(tester);
-      return (await tester.runAsync(
-        () => AccountsDao(harness.db).getAll(id),
-      ))!;
+      return (await tester.runAsync(() => AccountsDao(harness.db).getAll(id)))!;
     }
 
     Future<String> addAccount(
@@ -443,62 +443,65 @@ void main() {
       await harness.dispose(tester);
     });
 
-    testWidgets('Bank overdraft -500 -> Credit card, untouched: field "500.00"', (
-      tester,
-    ) async {
-      await openEditFor(tester, 'Current', AccountType.bank, -50000);
-      expect(_text(tester, _amountField), '-500.00');
+    testWidgets(
+      'Bank overdraft -500 -> Credit card, untouched: field "500.00"',
+      (tester) async {
+        await openEditFor(tester, 'Current', AccountType.bank, -50000);
+        expect(_text(tester, _amountField), '-500.00');
 
-      await pickType(tester, 'Credit card');
-      expect(_text(tester, _amountField), '500.00');
-      expect(find.text('Amount owed'), findsOneWidget);
+        await pickType(tester, 'Credit card');
+        expect(_text(tester, _amountField), '500.00');
+        expect(find.text('Amount owed'), findsOneWidget);
 
-      await tester.tap(_saveButton);
-      await settle(tester);
+        await tester.tap(_saveButton);
+        await settle(tester);
 
-      final account = await onlyAccount(tester);
-      expect(account.type, AccountType.creditCard);
-      expect(account.startingBalance, -50000);
+        final account = await onlyAccount(tester);
+        expect(account.type, AccountType.creditCard);
+        expect(account.startingBalance, -50000);
 
-      await harness.dispose(tester);
-    });
+        await harness.dispose(tester);
+      },
+    );
 
-    testWidgets('Bank +1000 -> Credit card, untouched: Save asks for the amount', (
-      tester,
-    ) async {
-      await openEditFor(tester, 'Savings', AccountType.bank, 100000);
-      expect(_text(tester, _amountField), '1,000.00');
+    testWidgets(
+      'Bank +1000 -> Credit card, untouched: Save asks for the amount',
+      (tester) async {
+        await openEditFor(tester, 'Savings', AccountType.bank, 100000);
+        expect(_text(tester, _amountField), '1,000.00');
 
-      await pickType(tester, 'Credit card');
-      expect(_text(tester, _amountField), '');
+        await pickType(tester, 'Credit card');
+        expect(_text(tester, _amountField), '');
 
-      await tester.tap(_saveButton);
-      await settle(tester, rounds: 10);
+        await tester.tap(_saveButton);
+        await settle(tester, rounds: 10);
 
-      expect(find.text('Enter the amount owed (0 if none)'), findsOneWidget);
-      expect(find.byType(AccountFormSheet), findsOneWidget);
-      var account = await onlyAccount(tester);
-      expect(account.type, AccountType.bank);
-      expect(account.startingBalance, 100000);
+        expect(find.text('Enter the amount owed (0 if none)'), findsOneWidget);
+        expect(find.byType(AccountFormSheet), findsOneWidget);
+        var account = await onlyAccount(tester);
+        expect(account.type, AccountType.bank);
+        expect(account.startingBalance, 100000);
 
-      // Typing an amount clears the error and saves it as owed.
-      await tester.enterText(_amountField, '0');
-      await tester.pump(); // rebuilds: errorText becomes null, the fade starts
-      // The decorator cross-fades its helper/error text over 167 ms (see
-      // _HelperErrorState in Flutter's input_decorator.dart), and the old
-      // error Text stays in the tree until that fade finishes. The fade starts
-      // inside the rebuild above, so it needs a pump AFTER the rebuild.
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Enter the amount owed (0 if none)'), findsNothing);
-      await tester.tap(_saveButton);
-      await settle(tester);
+        // Typing an amount clears the error and saves it as owed.
+        await tester.enterText(_amountField, '0');
+        await tester
+            .pump(); // rebuilds: errorText becomes null, the fade starts
+        // The decorator cross-fades its helper/error text over 167 ms (see
+        // _HelperErrorState in Flutter's input_decorator.dart), and the old
+        // error Text stays in the tree until that fade finishes. The fade starts
+        // inside the rebuild above, so it needs a pump AFTER the rebuild.
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Enter the amount owed (0 if none)'), findsNothing);
+        await tester.tap(_saveButton);
+        await settle(tester);
 
-      account = await onlyAccount(tester);
-      expect(account.type, AccountType.creditCard);
-      expect(account.startingBalance, 0);
+        account = await onlyAccount(tester);
+        expect(account.type, AccountType.creditCard);
+        expect(account.startingBalance, 0);
 
-      await harness.dispose(tester);
-    });
+        await harness.dispose(tester);
+      },
+    );
 
     testWidgets('a touched amount keeps the typed text when the type changes', (
       tester,

@@ -63,7 +63,8 @@ void main() {
 
   testWidgets('shows at most 5 rows', (tester) async {
     await pumpHome(tester, [
-      for (var i = 1; i <= 7; i++) makeTransactionItem(id: 't$i', note: 'row $i'),
+      for (var i = 1; i <= 7; i++)
+        makeTransactionItem(id: 't$i', note: 'row $i'),
     ]);
 
     for (var i = 1; i <= 5; i++) {
@@ -126,10 +127,7 @@ void main() {
 
     // Transfer: neutral, "from → to".
     expect(within('x', find.text('Transfer')), findsOneWidget);
-    expect(
-      within('x', find.text('Bank \u2192 Visa')),
-      findsOneWidget,
-    );
+    expect(within('x', find.text('Bank \u2192 Visa')), findsOneWidget);
     expect(within('x', find.text('Today')), findsOneWidget);
     expect(colorOf('x', '\u20B9300.00'), AppColors.light.textPrimary);
   });
@@ -194,76 +192,74 @@ void main() {
   });
 
   for (final brightness in Brightness.values) {
-    testWidgets(
-      'worst case: 100-char note, 40-char names, maxPaise at 320dp, '
-      'text scale 1.5 ($brightness)',
-      (tester) async {
-        await pumpHome(
-          tester,
-          [
-            makeTransactionItem(
-              id: 'a',
-              amount: Money.maxPaise,
-              note: 'n' * 100,
-              accountName: 'A' * 40,
-            ),
-            makeTransactionItem(
-              id: 'b',
-              type: TransactionType.income,
-              amount: Money.maxPaise,
-              categoryName: 'C' * 40,
-              accountName: 'B' * 40,
-            ),
-            makeTransactionItem(
-              id: 'c',
-              type: TransactionType.transfer,
-              amount: Money.maxPaise,
-              note: 'm' * 100,
-              accountName: 'D' * 40,
-              toAccountName: 'E' * 40,
-            ),
-          ],
-          size: const Size(320, 640),
-          textScale: 1.5,
-          brightness: brightness,
-        );
-
-        expect(tester.takeException(), isNull);
-
-        // The date under each amount is never truncated either.
-        final dates = find.text('Today');
-        expect(dates, findsNWidgets(3));
-        for (var i = 0; i < 3; i++) {
-          final date = tester.widget<Text>(dates.at(i));
-          expect(date.overflow, isNot(TextOverflow.ellipsis));
-          expect(date.maxLines, 1);
-        }
-
-        final amountTexts = find.descendant(
-          of: find.descendant(
-            of: find.byType(Card),
-            matching: find.byType(AmountText),
+    testWidgets('worst case: 100-char note, 40-char names, maxPaise at 320dp, '
+        'text scale 1.5 ($brightness)', (tester) async {
+      await pumpHome(
+        tester,
+        [
+          makeTransactionItem(
+            id: 'a',
+            amount: Money.maxPaise,
+            note: 'n' * 100,
+            accountName: 'A' * 40,
           ),
-          matching: find.byType(Text),
+          makeTransactionItem(
+            id: 'b',
+            type: TransactionType.income,
+            amount: Money.maxPaise,
+            categoryName: 'C' * 40,
+            accountName: 'B' * 40,
+          ),
+          makeTransactionItem(
+            id: 'c',
+            type: TransactionType.transfer,
+            amount: Money.maxPaise,
+            note: 'm' * 100,
+            accountName: 'D' * 40,
+            toAccountName: 'E' * 40,
+          ),
+        ],
+        size: const Size(320, 640),
+        textScale: 1.5,
+        brightness: brightness,
+      );
+
+      expect(tester.takeException(), isNull);
+
+      // The date under each amount is never truncated either.
+      final dates = find.text('Today');
+      expect(dates, findsNWidgets(3));
+      for (var i = 0; i < 3; i++) {
+        final date = tester.widget<Text>(dates.at(i));
+        expect(date.overflow, isNot(TextOverflow.ellipsis));
+        expect(date.maxLines, 1);
+      }
+
+      final amountTexts = find.descendant(
+        of: find.descendant(
+          of: find.byType(Card),
+          matching: find.byType(AmountText),
+        ),
+        matching: find.byType(Text),
+      );
+      expect(amountTexts, findsWidgets);
+      for (var i = 0; i < tester.widgetList(amountTexts).length; i++) {
+        final text = tester.widget<Text>(amountTexts.at(i));
+        expect(text.overflow, isNot(TextOverflow.ellipsis));
+        expect(text.maxLines, 1);
+        final paragraph = tester.renderObject<RenderParagraph>(
+          amountTexts.at(i),
         );
-        expect(amountTexts, findsWidgets);
-        for (var i = 0; i < tester.widgetList(amountTexts).length; i++) {
-          final text = tester.widget<Text>(amountTexts.at(i));
-          expect(text.overflow, isNot(TextOverflow.ellipsis));
-          expect(text.maxLines, 1);
-          final paragraph = tester.renderObject<RenderParagraph>(
-            amountTexts.at(i),
-          );
-          expect(paragraph.didExceedMaxLines, isFalse);
-        }
-        expect(tester.takeException(), isNull);
-      },
-    );
+        expect(paragraph.didExceedMaxLines, isFalse);
+      }
+      expect(tester.takeException(), isNull);
+    });
   }
 
   testWidgets('after scrolling, the last row clears the FAB', (tester) async {
     await pumpHome(tester, [
-      for (var i = 1; i <= 5; i++) makeTransactionItem(id: 't$i', note: 'row $i'),
+      for (var i = 1; i <= 5; i++)
+        makeTransactionItem(id: 't$i', note: 'row $i'),
     ]);
 
     for (var i = 0; i < 3; i++) {

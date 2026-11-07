@@ -10,6 +10,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../lock/presentation/pin_setup_screen.dart';
 import '../data/data_export_service.dart';
+
 /// Settings screen scaffold.
 ///
 /// Theme mode, App Lock, and Data export are all wired to real
@@ -146,7 +147,9 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.of(sheetContext).pop();
               switch (mode) {
                 case AppLockMode.os:
-                  await ref.read(appLockModeProvider.notifier).setMode(AppLockMode.os);
+                  await ref
+                      .read(appLockModeProvider.notifier)
+                      .setMode(AppLockMode.os);
                 case AppLockMode.pin:
                   await Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const PinSetupScreen()),
@@ -287,8 +290,7 @@ class _ExportDataRowState extends ConsumerState<_ExportDataRow> {
             ListTile(
               leading: const Icon(PhosphorIconsRegular.shareNetwork),
               title: const Text('Share...'),
-              onTap: () =>
-                  Navigator.of(sheetContext).pop(_ExportChoice.share),
+              onTap: () => Navigator.of(sheetContext).pop(_ExportChoice.share),
             ),
             if (Platform.isAndroid)
               ListTile(

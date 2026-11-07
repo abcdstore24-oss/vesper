@@ -91,9 +91,9 @@ Entry format:
 
 ### TransactionsDao
 - File: transactions_dao.dart
-- Purpose: insert / update / delete / getById / watchRecent. Validates, writes
-  and checks the balance range in ONE database transaction; throws
-  TransactionValidationException(error). TransactionsDao(db, {clock}).
+- Purpose: insert / update / delete / getById / watchRecent / watchAll(userId, 
+  {type}). Validates, writes and checks the balance range in ONE database transaction; 
+  throws TransactionValidationException(error). TransactionsDao(db, {clock}).
 - Notes: bySource: true (update/delete) is for loans/investments code only;
   rows with a source are otherwise locked (linkedToSource). No dates after the
   end of today.
@@ -122,8 +122,12 @@ Entry format:
 
 ### selectRecentTransactions / TransactionListItem
 - File: transaction_queries.dart
-- Purpose: joined rows (category name/icon, account names) for the newest
-  transactions: order occurred_at, created_at, rowid (all descending).
+- Purpose: joined rows (category name/icon, account names) of a user's 
+  transactions: selectRecentTransactions(db, {userId, type?, limit?}); type 
+  filters in SQL (null = all), limit null = no limit; order occurred_at, 
+  created_at, rowid (all descending). LEFT joins ignore is_archived, so archived 
+  names still show; sourced rows included. Reads transactions, categories and 
+  accounts. Named "Recent" for history; the full list uses it with no limit.
 
 ### selectRecentCategories
 - File: category_queries.dart
@@ -138,12 +142,15 @@ Entry format:
 - Purpose: live account list with balances (balances include transactions);
   Total Balance; card dues.
 
-### recentTransactionsProvider, categoriesByKindProvider (family),
-### recentCategoriesProvider (family), activeAccountsProvider
+### recentTransactionsProvider, allTransactionsProvider (autoDispose family), 
+### categoriesByKindProvider (family), recentCategoriesProvider (family), 
+### activeAccountsProvider
 - File: transactions_providers.dart
-- Purpose: the 5 newest transactions; active categories of a kind; the 5
-  recently used categories of a kind; non-archived accounts.
-- Notes: all user-scoped streams await localUserIdProvider first.
+- Purpose: the 5 newest transactions; all of the user's transactions, 
+  newest first, optional SQL type filter (null = All); active categories 
+  of a kind; the 5 recently used categories of a kind; non-archived accounts.
+- Notes: all user-scoped streams await localUserIdProvider first. 
+  allTransactionsProvider is autoDispose and keyed by TransactionType? (null = All).
 
 ## Finance UI (lib/features/finance/presentation/)
 
@@ -180,14 +187,17 @@ Entry format:
 
 ### TransactionTile
 - File: widgets/transaction_tile.dart
-- Purpose: one descriptive row: icon circle, title, subtitle, and a right column
-  with the amount and the date under it. Not tappable yet. Named TransactionTile
-  because TransactionRow is Drift's data class.
+- Purpose: one descriptive row: icon circle, title, subtitle, and a right 
+  column with the amount and, unless showDate is false, the date under it. 
+  showDate (default true): the Transactions list passes false because its date 
+  header carries the date. Not tappable yet. Named TransactionTile because TransactionRow 
+  is Drift's data class.
 
 ### RecentTransactions
 - File: widgets/recent_transactions.dart
-- Purpose: "Recent transactions" section: up to 5 tiles in one Card; empty =
-  DashboardCard; loading = spinner card; error = message + Retry.
+- Purpose: "Recent transactions" section: up to 5 tiles in one Card plus a "See all" 
+  header action (only when there is at least one row) opening TransactionsScreen; 
+  empty = DashboardCard; loading = spinner card; error = message + Retry.
 
 ### transaction_display
 - File: transaction_display.dart
@@ -199,6 +209,23 @@ Entry format:
 - Purpose: categoryIcon(String? key) -> Phosphor icon for a category icon KEY;
   unknown or null falls back to categoryFallbackIcon (tag).
 - Notes: add new icon keys to its map.
+
+### TransactionsScreen
+- File: transactions_screen.dart
+- Used by: RecentTransactions ("See all")
+- Purpose: all transactions, newest first, under date headers; filter chips
+  All / Expense / Income / Transfer (SQL filter, local state, always
+  visible); one TransactionTile(showDate: false) per Card; lazy
+  ListView.builder; own + FAB (heroTag: null) and 96px bottom padding.
+  Loading = spinner, error = message + Retry, empty = DashboardCard (All) or a
+  short message (filters). Read-only.
+- Notes: no pagination yet: every row of the chosen filter is loaded.
+
+### groupTransactionsByDate / TransactionListEntry
+- File: transaction_grouping.dart
+- Purpose: groupTransactionsByDate(items, {now}) -> TransactionDateHeader(label)
+  and TransactionRowEntry(item) entries, grouped by LOCAL calendar day, input
+  order kept, header text = AppDates.format. Pure and unit-tested.
 
 ## Test support (test/support/)
 

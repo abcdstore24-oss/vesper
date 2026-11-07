@@ -46,8 +46,9 @@ abstract final class Money {
     final int fraction = absPaise % 100;
 
     final String fractionText = fraction < 10 ? '0$fraction' : '$fraction';
-    final String sign =
-        negative ? '-' : (alwaysShowSign && paise != 0 ? '+' : '');
+    final String sign = negative
+        ? '-'
+        : (alwaysShowSign && paise != 0 ? '+' : '');
     final String prefix = symbol ? rupeeSymbol : '';
 
     return '$sign$prefix${_groupIndian(rupees.toString())}.$fractionText';

@@ -76,18 +76,21 @@ void main() {
     return rows.map((c) => c.name).toList();
   }
 
-  test('newest use first; each category once; ties by created_at then rowid', () async {
-    await add('exp_food', oct(10));
-    await add('exp_rent', oct(12));
-    await add('exp_food', oct(11)); // Food again, still older than Rent
-    await add('exp_bills', oct(12)); // same day as Rent, added later
+  test(
+    'newest use first; each category once; ties by created_at then rowid',
+    () async {
+      await add('exp_food', oct(10));
+      await add('exp_rent', oct(12));
+      await add('exp_food', oct(11)); // Food again, still older than Rent
+      await add('exp_bills', oct(12)); // same day as Rent, added later
 
-    expect(await recentNames(), [
-      'Bills & Utilities',
-      'Rent',
-      'Food & Dining',
-    ]);
-  });
+      expect(await recentNames(), [
+        'Bills & Utilities',
+        'Rent',
+        'Food & Dining',
+      ]);
+    },
+  );
 
   test('the latest use of a category is what counts', () async {
     await add('exp_food', oct(1));
@@ -114,7 +117,13 @@ void main() {
 
     final five = await recentNames();
     expect(five, hasLength(5));
-    expect(five, ['Health', 'Shopping', 'Rent', 'Bills & Utilities', 'Transport']);
+    expect(five, [
+      'Health',
+      'Shopping',
+      'Rent',
+      'Bills & Utilities',
+      'Transport',
+    ]);
     expect(await recentNames(limit: 2), ['Health', 'Shopping']);
     expect(await recentNames(limit: 50), hasLength(7));
   });
@@ -195,29 +204,33 @@ void main() {
     expect(await recentNames(user: 'other-user'), ['Rent']);
   });
 
-  test('the stream re-emits when a transaction is added or a category archived', () async {
-    final emissions = <List<String>>[];
-    final subscription = selectRecentCategories(
-      db,
-      userId: userId,
-      kind: CategoryKind.expense,
-    ).watch().listen((rows) => emissions.add([for (final c in rows) c.name]));
-    addTearDown(subscription.cancel);
+  test(
+    'the stream re-emits when a transaction is added or a category archived',
+    () async {
+      final emissions = <List<String>>[];
+      final subscription = selectRecentCategories(
+        db,
+        userId: userId,
+        kind: CategoryKind.expense,
+      ).watch().listen((rows) => emissions.add([for (final c in rows) c.name]));
+      addTearDown(subscription.cancel);
 
-    await pumpUntil(() => emissions.isNotEmpty);
-    expect(emissions.last, isEmpty);
+      await pumpUntil(() => emissions.isNotEmpty);
+      expect(emissions.last, isEmpty);
 
-    await add('exp_food', oct(10));
-    await pumpUntil(() => emissions.last.length == 1);
-    expect(emissions.last, ['Food & Dining']);
+      await add('exp_food', oct(10));
+      await pumpUntil(() => emissions.last.length == 1);
+      expect(emissions.last, ['Food & Dining']);
 
-    await add('exp_rent', oct(11));
-    await pumpUntil(() => emissions.last.length == 2);
-    expect(emissions.last, ['Rent', 'Food & Dining']);
+      await add('exp_rent', oct(11));
+      await pumpUntil(() => emissions.last.length == 2);
+      expect(emissions.last, ['Rent', 'Food & Dining']);
 
-    await (db.update(db.categories)..where((t) => t.seedKey.equals('exp_rent')))
-        .write(const CategoriesCompanion(isArchived: Value(true)));
-    await pumpUntil(() => emissions.last.length == 1);
-    expect(emissions.last, ['Food & Dining']);
-  });
+      await (db.update(db.categories)
+            ..where((t) => t.seedKey.equals('exp_rent')))
+          .write(const CategoriesCompanion(isArchived: Value(true)));
+      await pumpUntil(() => emissions.last.length == 1);
+      expect(emissions.last, ['Food & Dining']);
+    },
+  );
 }

@@ -234,7 +234,10 @@ class _PickerRow<T> extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: surface, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: surface,
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(
                   item.icon,
                   size: 20,
@@ -266,7 +269,10 @@ class _PickerRow<T> extends StatelessWidget {
             ),
             if (selected) ...[
               const SizedBox(width: AppSpacing.md),
-              Icon(PhosphorIconsRegular.check, color: theme.colorScheme.primary),
+              Icon(
+                PhosphorIconsRegular.check,
+                color: theme.colorScheme.primary,
+              ),
             ],
           ],
         ),

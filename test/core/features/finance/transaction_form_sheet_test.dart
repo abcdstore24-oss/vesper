@@ -126,11 +126,11 @@ void main() {
       final base = DateTime(2026, 1, 1, 9);
       for (var i = 0; i < accounts.length; i++) {
         final id = ids[accounts[i].name]!;
-        await (harness.db.update(harness.db.accounts)
-              ..where((t) => t.id.equals(id)))
-            .write(
-              AccountsCompanion(createdAt: Value(base.add(Duration(seconds: i)))),
-            );
+        await (harness.db.update(
+          harness.db.accounts,
+        )..where((t) => t.id.equals(id))).write(
+          AccountsCompanion(createdAt: Value(base.add(Duration(seconds: i)))),
+        );
       }
       if (seed != null) await seed(harness.db, userId, ids);
     });
@@ -282,10 +282,7 @@ void main() {
       expect(totalBalancePaise(await accountList(tester, env)), totalBefore);
 
       expect(find.text('Transfer'), findsOneWidget);
-      expect(
-        find.text('Main bank \u2192 Cash wallet'),
-        findsOneWidget,
-      );
+      expect(find.text('Main bank \u2192 Cash wallet'), findsOneWidget);
       // The date is shown under the amount, not in the subtitle.
       expect(find.text('Today'), findsOneWidget);
       expect(find.text('\u20B9300.00'), findsOneWidget);
@@ -394,7 +391,9 @@ void main() {
     testWidgets('Transfer is disabled with a single account', (tester) async {
       final env = await open(tester);
 
-      final chip = tester.widget<ChoiceChip>(_typeChip(TransactionType.transfer));
+      final chip = tester.widget<ChoiceChip>(
+        _typeChip(TransactionType.transfer),
+      );
       expect(chip.onSelected, isNull);
       expect(find.text('Add a second account to transfer'), findsOneWidget);
 
@@ -474,7 +473,10 @@ void main() {
       );
 
       expect(find.text('Paid from'), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Add expense'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Add expense'),
+        findsOneWidget,
+      );
 
       await tapTypeChip(tester, TransactionType.income);
       expect(find.text('Received in'), findsOneWidget);
@@ -482,7 +484,10 @@ void main() {
 
       await tapTypeChip(tester, TransactionType.transfer);
       expect(find.text('From'), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Add transfer'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Add transfer'),
+        findsOneWidget,
+      );
 
       await env.harness.dispose(tester);
     });
@@ -631,53 +636,60 @@ void main() {
       await env.harness.dispose(tester);
     });
 
-    testWidgets('the picker searches, shows a check, and cancel keeps the choice', (
-      tester,
-    ) async {
-      final env = await open(tester);
+    testWidgets(
+      'the picker searches, shows a check, and cancel keeps the choice',
+      (tester) async {
+        final env = await open(tester);
 
-      await tester.ensureVisible(_categoryField);
-      await tester.tap(_categoryField);
-      await settle(tester, rounds: 6);
+        await tester.ensureVisible(_categoryField);
+        await tester.tap(_categoryField);
+        await settle(tester, rounds: 6);
 
-      // 14 expense categories: more than the search threshold.
-      expect(_picker, findsOneWidget);
-      expect(find.byKey(const ValueKey('picker_search')), findsOneWidget);
+        // 14 expense categories: more than the search threshold.
+        expect(_picker, findsOneWidget);
+        expect(find.byKey(const ValueKey('picker_search')), findsOneWidget);
 
-      await tester.enterText(find.byKey(const ValueKey('picker_search')), 'bil');
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(
-        find.descendant(of: _picker, matching: find.text('Bills & Utilities')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: _picker, matching: find.text('Groceries')),
-        findsNothing,
-      );
+        await tester.enterText(
+          find.byKey(const ValueKey('picker_search')),
+          'bil',
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          find.descendant(
+            of: _picker,
+            matching: find.text('Bills & Utilities'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: _picker, matching: find.text('Groceries')),
+          findsNothing,
+        );
 
-      // Cancel (tap outside the sheet): nothing is chosen.
-      await tester.tapAt(const Offset(10, 10));
-      await settle(tester, rounds: 6);
-      expect(_picker, findsNothing);
-      expect(_inField(_categoryField, 'Choose a category'), findsOneWidget);
+        // Cancel (tap outside the sheet): nothing is chosen.
+        await tester.tapAt(const Offset(10, 10));
+        await settle(tester, rounds: 6);
+        expect(_picker, findsNothing);
+        expect(_inField(_categoryField, 'Choose a category'), findsOneWidget);
 
-      // Choose one, reopen: the chosen row carries a check; cancel keeps it.
-      await chooseCategory(tester, 'Groceries');
-      await tester.tap(_categoryField);
-      await settle(tester, rounds: 6);
-      expect(
-        find.descendant(
-          of: _picker,
-          matching: find.byIcon(PhosphorIconsRegular.check),
-        ),
-        findsOneWidget,
-      );
-      await tester.tapAt(const Offset(10, 10));
-      await settle(tester, rounds: 6);
-      expect(_inField(_categoryField, 'Groceries'), findsOneWidget);
+        // Choose one, reopen: the chosen row carries a check; cancel keeps it.
+        await chooseCategory(tester, 'Groceries');
+        await tester.tap(_categoryField);
+        await settle(tester, rounds: 6);
+        expect(
+          find.descendant(
+            of: _picker,
+            matching: find.byIcon(PhosphorIconsRegular.check),
+          ),
+          findsOneWidget,
+        );
+        await tester.tapAt(const Offset(10, 10));
+        await settle(tester, rounds: 6);
+        expect(_inField(_categoryField, 'Groceries'), findsOneWidget);
 
-      await env.harness.dispose(tester);
-    });
+        await env.harness.dispose(tester);
+      },
+    );
   });
 
   group('recent categories', () {
@@ -737,51 +749,52 @@ void main() {
 
     Finder chip(String name) => find.widgetWithText(ChoiceChip, name);
 
-    testWidgets('at most 5, newest use first, only matching active ordinary rows', (
-      tester,
-    ) async {
-      final env = await open(tester, seed: seedRecents);
-      await settleUntil(tester, () => _anyRecentChip.evaluate().isNotEmpty);
+    testWidgets(
+      'at most 5, newest use first, only matching active ordinary rows',
+      (tester) async {
+        final env = await open(tester, seed: seedRecents);
+        await settleUntil(tester, () => _anyRecentChip.evaluate().isNotEmpty);
 
-      expect(find.text('Recent'), findsOneWidget);
-      expect(_anyRecentChip, findsNWidgets(5));
+        expect(find.text('Recent'), findsOneWidget);
+        expect(_anyRecentChip, findsNWidgets(5));
 
-      // Newest use first: Groceries (used again on the latest day),
-      // Transport, Health, Gifts, Travel.
-      const expected = [
-        'Groceries',
-        'Transport',
-        'Health',
-        'Gifts & Donations',
-        'Travel',
-      ];
-      for (final name in expected) {
-        expect(chip(name), findsOneWidget, reason: name);
-      }
-      for (var i = 0; i < expected.length - 1; i++) {
-        expect(
-          _before(
-            tester.getTopLeft(chip(expected[i])),
-            tester.getTopLeft(chip(expected[i + 1])),
-          ),
-          isTrue,
-          reason: '${expected[i]} should come before ${expected[i + 1]}',
-        );
-      }
+        // Newest use first: Groceries (used again on the latest day),
+        // Transport, Health, Gifts, Travel.
+        const expected = [
+          'Groceries',
+          'Transport',
+          'Health',
+          'Gifts & Donations',
+          'Travel',
+        ];
+        for (final name in expected) {
+          expect(chip(name), findsOneWidget, reason: name);
+        }
+        for (var i = 0; i < expected.length - 1; i++) {
+          expect(
+            _before(
+              tester.getTopLeft(chip(expected[i])),
+              tester.getTopLeft(chip(expected[i + 1])),
+            ),
+            isTrue,
+            reason: '${expected[i]} should come before ${expected[i + 1]}',
+          );
+        }
 
-      // Not offered: older than the 5th, archived, sourced/system, income.
-      for (final name in [
-        'Rent',
-        'Education',
-        'Entertainment',
-        'Loan given',
-        'Salary',
-      ]) {
-        expect(chip(name), findsNothing, reason: name);
-      }
+        // Not offered: older than the 5th, archived, sourced/system, income.
+        for (final name in [
+          'Rent',
+          'Education',
+          'Entertainment',
+          'Loan given',
+          'Salary',
+        ]) {
+          expect(chip(name), findsNothing, reason: name);
+        }
 
-      await env.harness.dispose(tester);
-    });
+        await env.harness.dispose(tester);
+      },
+    );
 
     testWidgets('the Income list holds income categories only', (tester) async {
       final env = await open(tester, seed: seedRecents);
@@ -806,31 +819,32 @@ void main() {
       await env.harness.dispose(tester);
     });
 
-    testWidgets('tapping a chip selects it; the picker keeps the chips in sync', (
-      tester,
-    ) async {
-      final env = await open(tester, seed: seedRecents);
-      await settleUntil(tester, () => _anyRecentChip.evaluate().isNotEmpty);
+    testWidgets(
+      'tapping a chip selects it; the picker keeps the chips in sync',
+      (tester) async {
+        final env = await open(tester, seed: seedRecents);
+        await settleUntil(tester, () => _anyRecentChip.evaluate().isNotEmpty);
 
-      expect(tester.widget<ChoiceChip>(chip('Groceries')).selected, isFalse);
+        expect(tester.widget<ChoiceChip>(chip('Groceries')).selected, isFalse);
 
-      await tapChip(tester, chip('Groceries'));
-      expect(_inField(_categoryField, 'Groceries'), findsOneWidget);
-      expect(tester.widget<ChoiceChip>(chip('Groceries')).selected, isTrue);
+        await tapChip(tester, chip('Groceries'));
+        expect(_inField(_categoryField, 'Groceries'), findsOneWidget);
+        expect(tester.widget<ChoiceChip>(chip('Groceries')).selected, isTrue);
 
-      // Choosing another one through the picker moves the selection.
-      await chooseCategory(tester, 'Transport');
-      expect(_inField(_categoryField, 'Transport'), findsOneWidget);
-      expect(tester.widget<ChoiceChip>(chip('Transport')).selected, isTrue);
-      expect(tester.widget<ChoiceChip>(chip('Groceries')).selected, isFalse);
+        // Choosing another one through the picker moves the selection.
+        await chooseCategory(tester, 'Transport');
+        expect(_inField(_categoryField, 'Transport'), findsOneWidget);
+        expect(tester.widget<ChoiceChip>(chip('Transport')).selected, isTrue);
+        expect(tester.widget<ChoiceChip>(chip('Groceries')).selected, isFalse);
 
-      // A choice that is not among the recents leaves every chip unselected.
-      await chooseCategory(tester, 'Rent');
-      expect(_inField(_categoryField, 'Rent'), findsOneWidget);
-      expect(tester.widget<ChoiceChip>(chip('Transport')).selected, isFalse);
+        // A choice that is not among the recents leaves every chip unselected.
+        await chooseCategory(tester, 'Rent');
+        expect(_inField(_categoryField, 'Rent'), findsOneWidget);
+        expect(tester.widget<ChoiceChip>(chip('Transport')).selected, isFalse);
 
-      await env.harness.dispose(tester);
-    });
+        await env.harness.dispose(tester);
+      },
+    );
 
     testWidgets('a saved transaction shows up in the recents next time', (
       tester,

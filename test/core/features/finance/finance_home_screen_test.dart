@@ -27,7 +27,8 @@ void main() {
       const FinanceHomeScreen(),
       overrides: [
         recentTransactionsOverride(const []),
-        accountsOverride(const [])],
+        accountsOverride(const []),
+      ],
     );
 
     expect(find.byKey(_totalCard), findsOneWidget);
@@ -221,7 +222,7 @@ void main() {
           textScale: 1.5,
           brightness: brightness,
           overrides: [
-        recentTransactionsOverride(const []),
+            recentTransactionsOverride(const []),
             accountsOverride([
               makeAccount(id: 'a', name: 'Bank', balance: Money.maxPaise),
               makeAccount(

@@ -32,8 +32,9 @@ class CategoriesDao {
   }
 
   Future<CategoryRow?> getById(String id) {
-    return (_db.select(_db.categories)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.categories,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// The built-in (or any) category of [userId] with [seedKey], or null if
