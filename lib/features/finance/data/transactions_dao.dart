@@ -128,6 +128,11 @@ class TransactionsDao {
   /// A row with a source throws [TransactionValidationError.linkedToSource]
   /// unless [bySource] is true. [bySource] is for the loans/investments
   /// code that owns such rows; no UI uses it.
+  ///
+  /// Category rule on update: an ARCHIVED category is accepted when it equals
+  /// the row's CURRENT category_id (the row may keep it); any other category
+  /// must still be active, and every other category rule is unchanged.
+  /// Accounts are not relaxed: an archived account is still rejected.
   Future<void> update(
     String id, {
     required String accountId,
@@ -163,6 +168,7 @@ class TransactionsDao {
         occurredAt: occurredAt,
         source: old.sourceType,
         sourceId: old.sourceId,
+        keepCategoryId: old.categoryId,
       );
 
       await (_db.update(_db.transactions)..where((t) => t.id.equals(id))).write(
@@ -252,6 +258,7 @@ class TransactionsDao {
     required DateTime occurredAt,
     required TransactionSource? source,
     required String? sourceId,
+    String? keepCategoryId,
   }) async {
     // Source: both set or both null. A transfer cannot carry one (reported
     // as sourceIncomplete: the source information is inconsistent).
@@ -348,7 +355,12 @@ class TransactionsDao {
         final expected = type == TransactionType.income
             ? CategoryKind.income
             : CategoryKind.expense;
-        if (category.isArchived || category.kind != expected) {
+        // An archived category is accepted only when it is the one the row
+        // already has (update passes it as [keepCategoryId]); the kind must
+        // still match the chosen type.
+        final archivedNotKept =
+            category.isArchived && category.id != keepCategoryId;
+        if (archivedNotKept || category.kind != expected) {
           throw const TransactionValidationException(
             TransactionValidationError.categoryInvalid,
           );

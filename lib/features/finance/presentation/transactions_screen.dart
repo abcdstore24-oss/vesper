@@ -7,13 +7,15 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/dashboard_card.dart';
 import '../data/transactions_table.dart';
 import 'providers/transactions_providers.dart';
+import 'open_transaction.dart';
 import 'transaction_grouping.dart';
 import 'widgets/transaction_form_sheet.dart';
 import 'widgets/transaction_tile.dart';
 
 /// Every transaction, newest first, grouped under date headers, with filter
 /// chips (All / Expense / Income / Transfer) and a + button for the add
-/// sheet. Read-only: rows are not tappable (editing is a later task).
+/// sheet. Tapping a row edits it (a locked row is explained instead) through
+/// openTransaction; delete is a later task.
 ///
 /// The chip row is always visible; only the list area shows loading or an
 /// error. The filter is local to this screen and runs in SQL. The list is
@@ -163,7 +165,15 @@ class _GroupedList extends StatelessWidget {
               ),
             );
           case TransactionRowEntry(:final item):
-            return Card(child: TransactionTile(item: item, showDate: false));
+            return Card(
+              // Clips the tap ripple to the rounded corners.
+              clipBehavior: Clip.antiAlias,
+              child: TransactionTile(
+                item: item,
+                showDate: false,
+                onTap: () => openTransaction(context, item),
+              ),
+            );
         }
       },
     );

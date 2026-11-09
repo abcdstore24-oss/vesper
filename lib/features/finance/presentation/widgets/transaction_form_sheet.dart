@@ -12,10 +12,12 @@ import '../../../../core/utils/app_dates.dart';
 import '../../../../core/utils/money.dart';
 import '../../../../shared/widgets/picker_sheet.dart';
 import '../../data/categories_table.dart';
+import '../../data/transaction_queries.dart';
 import '../../data/transactions_dao.dart';
 import '../../data/transactions_table.dart';
 import '../account_display.dart';
 import '../category_display.dart';
+import '../providers/accounts_providers.dart';
 import '../providers/transactions_providers.dart';
 import 'account_form_sheet.dart';
 
@@ -23,13 +25,17 @@ import 'account_form_sheet.dart';
 /// To for transfers) become a picker field instead of chips.
 const int accountChipsMax = 4;
 
-/// Opens the add-transaction sheet.
-Future<void> showTransactionFormSheet(BuildContext context) {
+/// Opens the add-transaction sheet, or, with [existing], the same sheet in
+/// edit mode pre-filled from that row.
+Future<void> showTransactionFormSheet(
+  BuildContext context, {
+  TransactionListItem? existing,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => const TransactionFormSheet(),
+    builder: (_) => TransactionFormSheet(existing: existing),
   );
 }
 
@@ -37,9 +43,20 @@ Future<void> showTransactionFormSheet(BuildContext context) {
 /// the Finance home updates through its streams, so nothing here refreshes
 /// anything.
 ///
+/// With [existing] it edits that row instead (title "Edit transaction",
+/// button "Save changes", saved through TransactionsDao.update):
+/// - the amount is pre-filled through Money (plain digits, no symbol);
+/// - the date keeps the row's exact occurred_at unless the user picks one;
+/// - the row's current category and accounts are shown even if archived
+///   (marked "archived"); archived items are offered only in the slot they
+///   already occupy, never as a choice for anything else.
+///
 /// Registered in COMPONENTS.md.
 class TransactionFormSheet extends ConsumerStatefulWidget {
-  const TransactionFormSheet({super.key});
+  const TransactionFormSheet({super.key, this.existing});
+
+  /// The row being edited; null = add mode.
+  final TransactionListItem? existing;
 
   @override
   ConsumerState<TransactionFormSheet> createState() =>
@@ -58,6 +75,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   /// The chosen calendar day (local, time of day ignored). Never after today.
   late DateTime _date;
 
+  /// Edit mode: true once the user has picked a date. Until then the row's
+  /// original occurred_at is kept exactly.
+  bool _dateTouched = false;
+
   bool _saving = false;
   // Set synchronously at the start of _save, before any rebuild, so a second
   // tap in the same frame can never start a second save.
@@ -71,6 +92,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   String? _noteError;
   String? _formError;
 
+  bool get _isEdit => widget.existing != null;
+
   bool get _isTransfer => _type == TransactionType.transfer;
 
   CategoryKind get _categoryKind => _type == TransactionType.income
@@ -80,8 +103,23 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _date = DateTime(now.year, now.month, now.day);
+    final existing = widget.existing;
+    if (existing == null) {
+      final now = DateTime.now();
+      _date = DateTime(now.year, now.month, now.day);
+      return;
+    }
+    final t = existing.transaction;
+    _type = t.type;
+    _categoryId = t.categoryId;
+    _fromId = t.accountId;
+    _toId = t.toAccountId;
+    // Money.format always gives exactly 2 decimals; dropping the grouping
+    // commas leaves plain digits that Money.parse reads back exactly.
+    _amount.text = Money.format(t.amount, symbol: false).replaceAll(',', '');
+    _note.text = t.note ?? '';
+    final at = t.occurredAt.isUtc ? t.occurredAt.toLocal() : t.occurredAt;
+    _date = DateTime(at.year, at.month, at.day);
   }
 
   @override
@@ -125,6 +163,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     if (picked == null || !mounted) return;
     setState(() {
       _date = DateTime(picked.year, picked.month, picked.day);
+      _dateTouched = true;
       _dateError = null;
     });
   }
@@ -173,21 +212,48 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     });
 
     try {
-      final userId = await ref.read(localUserIdProvider.future);
-      await TransactionsDao(ref.read(appDatabaseProvider)).insert(
-        userId: userId,
-        accountId: _fromId!,
-        type: _type,
-        amountPaise: parsed!,
-        categoryId: _isTransfer ? null : _categoryId,
-        toAccountId: _isTransfer ? _toId : null,
-        note: _note.text,
-        occurredAt: AppDates.occurredAtFor(_date, DateTime.now()),
-      );
+      final existing = widget.existing;
+      if (existing == null) {
+        final userId = await ref.read(localUserIdProvider.future);
+        await TransactionsDao(ref.read(appDatabaseProvider)).insert(
+          userId: userId,
+          accountId: _fromId!,
+          type: _type,
+          amountPaise: parsed!,
+          categoryId: _isTransfer ? null : _categoryId,
+          toAccountId: _isTransfer ? _toId : null,
+          note: _note.text,
+          occurredAt: AppDates.occurredAtFor(_date, DateTime.now()),
+        );
+      } else {
+        await TransactionsDao(ref.read(appDatabaseProvider)).update(
+          existing.transaction.id,
+          accountId: _fromId!,
+          type: _type,
+          amountPaise: parsed!,
+          categoryId: _isTransfer ? null : _categoryId,
+          toAccountId: _isTransfer ? _toId : null,
+          note: _note.text,
+          // Untouched date: keep the stored moment exactly (resetting it to
+          // 12:00 or "now" would reorder the row).
+          occurredAt: _dateTouched
+              ? AppDates.occurredAtFor(_date, DateTime.now())
+              : existing.transaction.occurredAt,
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop();
     } on TransactionValidationException catch (e) {
       if (!mounted) return;
+      if (_isEdit && e.error == TransactionValidationError.notFound) {
+        // The row was removed meanwhile: close, and say so.
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(
+          const SnackBar(content: Text('That transaction no longer exists')),
+        );
+        return;
+      }
       setState(() {
         _saving = false;
         _saveStarted = false;
@@ -204,16 +270,24 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           case TransactionValidationError.sameAccount:
             _toError = 'Choose two different accounts';
           case TransactionValidationError.accountArchived:
-            _fromError = 'That account is archived';
+            if (_isEdit) {
+              _markArchivedAccounts();
+            } else {
+              _fromError = 'That account is archived';
+            }
           case TransactionValidationError.noteTooLong:
             _noteError = 'Keep the note to 100 characters or fewer';
           case TransactionValidationError.futureDate:
             _dateError = "The date can't be in the future";
           case TransactionValidationError.balanceOutOfRange:
             _formError = 'That would make an account balance too large';
+          case TransactionValidationError.linkedToSource:
+            _formError = _isEdit
+                ? "This transaction belongs to Loans or Investments and "
+                      "can't be edited here."
+                : "Couldn't save. Please try again.";
           case TransactionValidationError.categoryNotAllowed:
           case TransactionValidationError.sourceIncomplete:
-          case TransactionValidationError.linkedToSource:
           case TransactionValidationError.notFound:
             _formError = "Couldn't save. Please try again.";
         }
@@ -227,6 +301,40 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         _formError = "Couldn't save. Please try again.";
       });
     }
+  }
+
+  /// Edit mode: the DAO said an account is archived. Say which field, and
+  /// ask for another account (never a silent failure). Call inside setState.
+  void _markArchivedAccounts() {
+    const message = 'That account is archived. Choose another account.';
+    final all = ref.read(accountsWithBalanceProvider).valueOrNull;
+    bool archived(String? id) =>
+        all?.any((a) => a.account.id == id && a.account.isArchived) ?? false;
+    final fromArchived = archived(_fromId);
+    final toArchived = _isTransfer && archived(_toId);
+    if (toArchived) _toError = message;
+    if (fromArchived || !toArchived) _fromError = message;
+  }
+
+  /// An account name, marked when it is archived (edit mode only ever shows
+  /// an archived account where the row already uses it).
+  static String _accountLabel(AccountRow a) =>
+      a.isArchived ? '${a.name} (archived)' : a.name;
+
+  /// Edit mode: the row's current category when it is archived (so not in
+  /// the active list) and the type is unchanged; null otherwise.
+  ({String id, String name, String? icon})? _keptArchivedCategory(
+    List<CategoryRow> active,
+  ) {
+    final existing = widget.existing;
+    if (existing == null) return null;
+    final t = existing.transaction;
+    final id = t.categoryId;
+    final name = existing.categoryName;
+    if (id == null || name == null) return null;
+    if (t.type == TransactionType.transfer || _type != t.type) return null;
+    if (active.any((c) => c.id == id)) return null;
+    return (id: id, name: name, icon: existing.categoryIcon);
   }
 
   @override
@@ -271,7 +379,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Add transaction', style: theme.textTheme.titleMedium),
+            Text(
+              _isEdit ? 'Edit transaction' : 'Add transaction',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: AppSpacing.lg),
             content,
           ],
@@ -287,11 +398,20 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     });
   }
 
-  Future<void> _pickCategory(List<CategoryRow> categories) async {
+  Future<void> _pickCategory(
+    List<CategoryRow> categories,
+    ({String id, String name, String? icon})? kept,
+  ) async {
     final picked = await showPickerSheet<String>(
       context,
       title: 'Category',
       items: [
+        if (kept != null)
+          PickerItem<String>(
+            value: kept.id,
+            title: '${kept.name} (archived)',
+            icon: categoryIcon(kept.icon),
+          ),
         for (final c in categories)
           PickerItem<String>(
             value: c.id,
@@ -318,7 +438,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         for (final a in choices)
           PickerItem<String>(
             value: a.id,
-            title: a.name,
+            title: _accountLabel(a),
             subtitle: accountTypeLabel(a.type),
             icon: accountTypeIcon(a.type),
           ),
@@ -379,36 +499,66 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
   Widget _buildForm(ThemeData theme, List<AccountRow> accounts) {
     final muted = theme.colorScheme.onSurfaceVariant;
-    final canTransfer = accounts.length >= 2;
+    final existing = widget.existing;
+    // Editing a transfer keeps Transfer available even if archived accounts
+    // leave fewer than two active ones.
+    final canTransfer =
+        accounts.length >= 2 ||
+        existing?.transaction.type == TransactionType.transfer;
+
+    // Edit mode: an archived account the row already uses stays selectable in
+    // the slot it occupies (From / To), and nowhere else.
+    final allAccounts = _isEdit
+        ? ref.watch(accountsWithBalanceProvider).valueOrNull
+        : null;
+    AccountRow? archivedRow(String? id) {
+      if (id == null || allAccounts == null) return null;
+      for (final a in allAccounts) {
+        if (a.account.id == id && a.account.isArchived) return a.account;
+      }
+      return null;
+    }
+
+    final keptFrom = archivedRow(existing?.transaction.accountId);
+    final keptTo = archivedRow(existing?.transaction.toAccountId);
+    final fromChoices = [...accounts, ?keptFrom];
+    final toPool = [...accounts, ?keptTo];
 
     // Keep the choices consistent with the accounts that exist now.
     if (_type == TransactionType.transfer && !canTransfer) {
       _type = TransactionType.expense;
     }
-    if (!accounts.any((a) => a.id == _fromId)) _fromId = accounts.first.id;
+    if (!fromChoices.any((a) => a.id == _fromId)) _fromId = accounts.first.id;
     if (_toId != null &&
-        (_toId == _fromId || !accounts.any((a) => a.id == _toId))) {
+        (_toId == _fromId || !toPool.any((a) => a.id == _toId))) {
       _toId = null;
     }
 
     final categories = _isTransfer
         ? null
         : ref.watch(categoriesByKindProvider(_categoryKind));
+    final activeCategories = categories?.valueOrNull;
+    final keptCategory = activeCategories == null
+        ? null
+        : _keptArchivedCategory(activeCategories);
     final noCategories =
         categories != null &&
         categories.hasValue &&
-        categories.requireValue.isEmpty;
+        categories.requireValue.isEmpty &&
+        keptCategory == null;
 
     final fromLabel = switch (_type) {
       TransactionType.expense => 'Paid from',
       TransactionType.income => 'Received in',
       TransactionType.transfer => 'From',
     };
-    final saveLabel = switch (_type) {
-      TransactionType.expense => 'Add expense',
-      TransactionType.income => 'Add income',
-      TransactionType.transfer => 'Add transfer',
-    };
+    final saveLabel = _isEdit
+        ? 'Save changes'
+        : switch (_type) {
+            TransactionType.expense => 'Add expense',
+            TransactionType.income => 'Add income',
+            TransactionType.transfer => 'Add transfer',
+          };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -468,12 +618,18 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         // 4. Category (expense / income only): one picker field, plus
         // one-tap chips for the most recently used.
         if (!_isTransfer) ...[
-          _buildCategorySection(theme, categories!),
+          _buildCategorySection(theme, categories!, keptCategory),
           const SizedBox(height: AppSpacing.lg),
         ],
 
         // 5. Account(s): chips for a few, a picker field for many.
-        ..._accountFields(theme, accounts, fromLabel),
+        ..._accountFields(
+          theme,
+          accounts,
+          fromLabel,
+          fromChoices: fromChoices,
+          toPool: toPool,
+        ),
         const SizedBox(height: AppSpacing.lg),
 
         // 6. Date
@@ -554,6 +710,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   Widget _buildCategorySection(
     ThemeData theme,
     AsyncValue<List<CategoryRow>> async,
+    ({String id, String name, String? icon})? kept,
   ) {
     if (async.hasError) {
       return Column(
@@ -581,7 +738,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         ],
       );
     }
-    if (categories.isEmpty) {
+    if (categories.isEmpty && kept == null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -600,6 +757,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     for (final c in categories) {
       if (c.id == _categoryId) chosen = c;
     }
+    // Edit mode: the row's own archived category, shown as selected.
+    final keptShown = (chosen == null && kept != null && kept.id == _categoryId)
+        ? kept
+        : null;
     final recent =
         ref.watch(recentCategoriesProvider(_categoryKind)).valueOrNull ??
         const <CategoryRow>[];
@@ -611,11 +772,15 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           key: const ValueKey('category_field'),
           label: 'Category',
           hint: 'Choose a category',
-          value: chosen?.name,
-          icon: chosen == null ? null : categoryIcon(chosen.icon),
+          value: keptShown != null
+              ? '${keptShown.name} (archived)'
+              : chosen?.name,
+          icon: keptShown != null
+              ? categoryIcon(keptShown.icon)
+              : (chosen == null ? null : categoryIcon(chosen.icon)),
           errorText: _categoryError,
           enabled: !_saving,
-          onTap: () => _pickCategory(categories),
+          onTap: () => _pickCategory(categories, kept),
         ),
         if (recent.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
@@ -651,23 +816,29 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   /// The From field (and To, for transfers). With up to [accountChipsMax]
   /// active accounts these are the chips; with more they are picker fields.
   /// "To" never offers the From account.
+  ///
+  /// [fromChoices] / [toPool] are the active accounts, plus (edit mode) the
+  /// row's own archived From / To account in its slot. Chips vs pickers still
+  /// depends on the ACTIVE count only.
   List<Widget> _accountFields(
     ThemeData theme,
     List<AccountRow> accounts,
-    String fromLabel,
-  ) {
+    String fromLabel, {
+    required List<AccountRow> fromChoices,
+    required List<AccountRow> toPool,
+  }) {
     final usePickers = accounts.length > accountChipsMax;
-    final toChoices = accounts.where((a) => a.id != _fromId).toList();
+    final toChoices = toPool.where((a) => a.id != _fromId).toList();
 
-    AccountRow? byId(String? id) {
-      for (final a in accounts) {
+    AccountRow? byId(List<AccountRow> list, String? id) {
+      for (final a in list) {
         if (a.id == id) return a;
       }
       return null;
     }
 
-    final from = byId(_fromId);
-    final to = byId(_toId);
+    final from = byId(fromChoices, _fromId);
+    final to = byId(toPool, _toId);
 
     return [
       if (usePickers)
@@ -675,20 +846,20 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           key: const ValueKey('from_field'),
           label: fromLabel,
           hint: 'Choose an account',
-          value: from?.name,
+          value: from == null ? null : _accountLabel(from),
           icon: from == null ? null : accountTypeIcon(from.type),
           errorText: _fromError,
           enabled: !_saving,
           onTap: () => _pickAccount(
             title: fromLabel,
-            choices: accounts,
+            choices: fromChoices,
             selectedId: _fromId,
             isFrom: true,
           ),
         )
       else ...[
         _label(theme, fromLabel),
-        _accountChips(accounts, selectedId: _fromId, isFrom: true),
+        _accountChips(fromChoices, selectedId: _fromId, isFrom: true),
         _fieldError(theme, _fromError),
       ],
       if (_isTransfer) ...[
@@ -698,7 +869,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
             key: const ValueKey('to_field'),
             label: 'To',
             hint: 'Choose an account',
-            value: to?.name,
+            value: to == null ? null : _accountLabel(to),
             icon: to == null ? null : accountTypeIcon(to.type),
             errorText: _toError,
             enabled: !_saving,
@@ -734,7 +905,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               ChoiceChip(
                 key: ValueKey('${isFrom ? 'from' : 'to'}_chip_${a.id}'),
                 avatar: Icon(accountTypeIcon(a.type), size: 18),
-                label: _chipLabel(a.name, labelMax),
+                label: _chipLabel(_accountLabel(a), labelMax),
                 selected: selectedId == a.id,
                 onSelected: _saving
                     ? null

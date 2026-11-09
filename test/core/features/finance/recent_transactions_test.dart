@@ -182,12 +182,14 @@ void main() {
     expect(find.text('Today'), findsNWidgets(2)); // one per row, on the right
   });
 
-  testWidgets('rows are not tappable', (tester) async {
+  testWidgets('rows are tappable (Task 4b-2b: tap opens the edit sheet)', (
+    tester,
+  ) async {
     await pumpHome(tester, [makeTransactionItem(id: 't1', note: 'x')]);
 
     expect(
       find.descendant(of: _tile('t1'), matching: find.byType(InkWell)),
-      findsNothing,
+      findsOneWidget,
     );
   });
 

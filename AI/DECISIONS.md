@@ -572,3 +572,26 @@ outlive the screen; switching chips shows a spinner for the first load of
 that filter. Rows are read-only (edit/delete/lock is 4b-2b). Known scaling
 limit: no pagination yet; every row of the chosen filter is loaded into
 memory (the list itself is built lazily).
+
+### 2026-11-07 — Edit a transaction and locked rows (Phase 2, Task 4b-2b)
+Rows are now tappable on BOTH the Recent list and the full Transactions
+list (this supersedes "rows are read-only" in the 4b-2a entry). One shared
+helper, openTransaction, decides: a row without a source opens
+TransactionFormSheet in edit mode; a row with a source (loan/investment)
+shows a lock and opens a read-only LockedTransactionSheet (type, amount via
+AmountText, category, account(s), note, date, and "Edit it from Loans" /
+"Edit it from Investments"; no Save, no Delete, text only because no Loans or
+Investments screens exist yet). Cards clip the tap ripple.
+DAO (the only rule change): TransactionsDao.update accepts an ARCHIVED
+category when it equals the row's CURRENT category_id; any other category must
+still be active, the kind must match the type, system categories remain
+only for sourced rows. insert is unchanged. Accounts are NOT relaxed: an
+archived account on update is still rejected, so a row on an archived
+account needs another account ("That account is archived. Choose another
+account."). Edit mode: same sheet, title "Edit transaction", button
+"Save changes", prefilled via Money (plain digits, no symbol); the date keeps
+the row's exact occurred_at unless the user picks one (then
+AppDates.occurredAtFor, i.e. 12:00); the row's own archived category/accounts
+are shown marked "(archived)" only in the slot they occupy; switching
+expense/income still clears the category. DAO errors show inline; a vanished
+row closes the sheet with a SnackBar. Delete is 4b-2c.

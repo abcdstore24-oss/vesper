@@ -40,13 +40,10 @@ HANDOFF.md).
       transaction row — 4b-1b
 - [x] Widget-test infrastructure: narrow google_fonts filter, stable DB tests
 - [x] Full transactions list: See all, lazy date-grouped list, type filter chips — 4b-2a
+- [x] Edit a transaction + locked rows (tappable on Recent and the full list) — 4b-2b
 
 ### Next up, in this order
-- [ ] **4b-2b** Edit + delete a transaction: tap a row to edit in the same
-      sheet; delete with a confirm that says how the balance changes; locked
-      rows (created by loans/investments) show a lock and "Edit it from
-      Loans/Investments"; an edit may keep a category that was archived since
-      (needs one DAO rule change, see DECISIONS "Planned decisions").
+- [ ] **4b-2c** Delete a transaction with a confirm that says how the balance changes.
 - [ ] **Fonts** Bundle Fraunces + Karla as app assets (offline-first first
       launch, no first-use download stutter, removes the test font noise and
       lets the test font filter be retired). Same font versions as today.

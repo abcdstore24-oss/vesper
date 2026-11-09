@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -8,7 +9,8 @@ import '../transaction_display.dart';
 
 /// One transaction as a descriptive row: icon circle, title, subtitle, and a
 /// right column with the amount and, under it, the date (unless [showDate] is
-/// false). Not tappable (editing comes later). Named TransactionTile because
+/// false). Tappable only when [onTap] is given; a row with a source (created
+/// by loans/investments) shows a small lock. Named TransactionTile because
 /// TransactionRow is Drift's data class.
 ///
 /// The title and subtitle wrap to at most two lines (ellipsis after that).
@@ -22,6 +24,7 @@ class TransactionTile extends StatelessWidget {
     required this.item,
     this.now,
     this.showDate = true,
+    this.onTap,
   });
 
   final TransactionListItem item;
@@ -33,6 +36,10 @@ class TransactionTile extends StatelessWidget {
   /// false because its date header already carries the date.
   final bool showDate;
 
+  /// Makes the row tappable (InkWell ripple; the Card around it must clip
+  /// it). Null = not tappable. A row with a source also shows a small lock.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -41,8 +48,15 @@ class TransactionTile extends StatelessWidget {
         : AppColors.light;
     final display = transactionDisplay(item, now: now);
 
-    return Padding(
-      key: ValueKey('transaction-tile-${item.transaction.id}'),
+    final locked = item.transaction.sourceType != null;
+    final titleText = Text(
+      display.title,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.bodyLarge,
+    );
+
+    final row = Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
@@ -71,12 +85,25 @@ class TransactionTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      display.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyLarge,
-                    ),
+                    if (locked)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: titleText),
+                          const SizedBox(width: AppSpacing.xs),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Icon(
+                              PhosphorIconsRegular.lock,
+                              size: 16,
+                              semanticLabel: 'Locked',
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      titleText,
                     Text(
                       display.subtitle,
                       maxLines: 2,
@@ -123,6 +150,11 @@ class TransactionTile extends StatelessWidget {
           );
         },
       ),
+    );
+
+    return KeyedSubtree(
+      key: ValueKey('transaction-tile-${item.transaction.id}'),
+      child: onTap == null ? row : InkWell(onTap: onTap, child: row),
     );
   }
 }

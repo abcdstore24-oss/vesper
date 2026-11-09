@@ -94,6 +94,8 @@ Entry format:
 - Purpose: insert / update / delete / getById / watchRecent / watchAll(userId, 
   {type}). Validates, writes and checks the balance range in ONE database transaction; 
   throws TransactionValidationException(error). TransactionsDao(db, {clock}).
+  update accepts an archived category only if it is the row's current category; 
+  archived accounts are still rejected.
 - Notes: bySource: true (update/delete) is for loans/investments code only;
   rows with a source are otherwise locked (linkedToSource). No dates after the
   end of today.
@@ -180,24 +182,27 @@ Entry format:
 
 ### TransactionFormSheet / showTransactionFormSheet
 - File: widgets/transaction_form_sheet.dart
-- Purpose: add expense/income/transfer. Category = ONE picker field plus up to 5
-  "Recent" one-tap chips; accounts are chips up to accountChipsMax (4 active
-  accounts) and picker fields beyond (From and To together). Saves through
-  TransactionsDao.insert; the Finance home updates through its streams.
+- Purpose: add OR edit: showTransactionFormSheet(context, {existing}). Add mode 
+  records an expense, income or transfer. Edit mode (existing: TransactionListItem): 
+  title "Edit transaction", button "Save changes", prefilled (amount via Money, plain 
+  digits), saves through TransactionsDao.update; the date keeps the original occurred_at 
+  unless picked; the row's own archived category/accounts are shown marked "(archived)"; 
+  archived-account errors ask for another account.
 
 ### TransactionTile
 - File: widgets/transaction_tile.dart
 - Purpose: one descriptive row: icon circle, title, subtitle, and a right 
-  column with the amount and, unless showDate is false, the date under it. 
-  showDate (default true): the Transactions list passes false because its date 
-  header carries the date. Not tappable yet. Named TransactionTile because TransactionRow 
-  is Drift's data class.
+  column with the amount and, unless showDate is false, the date under it. onTap 
+  (optional) makes it an InkWell row (the Card around it must clip: Clip.antiAlias); 
+  a row with a source shows a small Phosphor lock next to the title. Without onTap it 
+  is not tappable.
 
 ### RecentTransactions
 - File: widgets/recent_transactions.dart
 - Purpose: "Recent transactions" section: up to 5 tiles in one Card plus a "See all" 
   header action (only when there is at least one row) opening TransactionsScreen; 
   empty = DashboardCard; loading = spinner card; error = message + Retry.
+  Rows are tappable via openTransaction.
 
 ### transaction_display
 - File: transaction_display.dart
@@ -218,7 +223,8 @@ Entry format:
   visible); one TransactionTile(showDate: false) per Card; lazy
   ListView.builder; own + FAB (heroTag: null) and 96px bottom padding.
   Loading = spinner, error = message + Retry, empty = DashboardCard (All) or a
-  short message (filters). Read-only.
+  short message (filters). Rows are tappable via openTransaction (edit sheet, or 
+  the locked explanation); delete is 4b-2c.
 - Notes: no pagination yet: every row of the chosen filter is loaded.
 
 ### groupTransactionsByDate / TransactionListEntry
@@ -226,6 +232,22 @@ Entry format:
 - Purpose: groupTransactionsByDate(items, {now}) -> TransactionDateHeader(label)
   and TransactionRowEntry(item) entries, grouped by LOCAL calendar day, input
   order kept, header text = AppDates.format. Pure and unit-tested.
+
+### openTransaction
+- File: open_transaction.dart
+- Used by: RecentTransactions, TransactionsScreen
+- Purpose: what tapping a row does: no source -> edit sheet; source ->
+  LockedTransactionSheet. One place so both lists stay in step.
+
+### LockedTransactionSheet / showLockedTransactionSheet
+- File: widgets/locked_transaction_sheet.dart
+- Used by: openTransaction
+- Purpose: read-only details of a loan/investment row plus "Edit it from
+  Loans" / "Edit it from Investments". No fields, no Save/Delete.
+
+### withSource (test support)
+- File: test/support/transaction_item_helpers.dart
+- Purpose: copies a TransactionListItem as a loan/investment row for tests.
 
 ## Test support (test/support/)
 

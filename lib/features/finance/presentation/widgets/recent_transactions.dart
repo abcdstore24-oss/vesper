@@ -6,6 +6,7 @@ import '../../../../core/db/local_user_provider.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/dashboard_card.dart';
 import '../providers/transactions_providers.dart';
+import '../open_transaction.dart';
 import '../transactions_screen.dart';
 import 'transaction_tile.dart';
 
@@ -13,7 +14,8 @@ import 'transaction_tile.dart';
 /// card with up to 5 descriptive rows and a "See all" action (only when there
 /// is at least one row) that opens the full Transactions screen. Empty: a
 /// DashboardCard. Loading: a spinner card (never a fake empty state). Error:
-/// message + Retry.
+/// message + Retry. Tapping a row edits it (a locked row is explained instead)
+/// through openTransaction.
 ///
 /// Registered in COMPONENTS.md.
 class RecentTransactions extends ConsumerWidget {
@@ -59,7 +61,10 @@ class RecentTransactions extends ConsumerWidget {
             children: [
               for (var i = 0; i < items.length; i++) ...[
                 if (i > 0) const Divider(),
-                TransactionTile(item: items[i]),
+                TransactionTile(
+                  item: items[i],
+                  onTap: () => openTransaction(context, items[i]),
+                ),
               ],
             ],
           ),

@@ -105,10 +105,10 @@ void main() {
         tester.getTopLeft(find.text('Yesterday')).dy,
         lessThan(tester.getTopLeft(_tile('b')).dy),
       );
-      // Not tappable.
+      // Tappable since Task 4b-2b (tap opens the edit sheet).
       expect(
         find.descendant(of: _tile('a'), matching: find.byType(InkWell)),
-        findsNothing,
+        findsOneWidget,
       );
       expect(find.byTooltip('Add transaction'), findsOneWidget);
       expect(tester.takeException(), isNull);
