@@ -187,7 +187,9 @@ Entry format:
   title "Edit transaction", button "Save changes", prefilled (amount via Money, plain 
   digits), saves through TransactionsDao.update; the date keeps the original occurred_at 
   unless picked; the row's own archived category/accounts are shown marked "(archived)"; 
-  archived-account errors ask for another account.
+  archived-account errors ask for another account. Edit mode also has a "Delete transaction" 
+  TextButton (below Save) that opens DeleteTransactionDialog for the stored row; Save and 
+  Delete are both disabled while either is busy.
 
 ### TransactionTile
 - File: widgets/transaction_tile.dart
@@ -248,6 +250,22 @@ Entry format:
 ### withSource (test support)
 - File: test/support/transaction_item_helpers.dart
 - Purpose: copies a TransactionListItem as a loan/investment row for tests.
+
+### deleteImpactLines / DeleteImpactAccount
+- File: transaction_delete_impact.dart
+- Used by: TransactionFormSheet (delete confirmation)
+- Purpose: pure function: one line per affected account describing how its
+  balance changes when a transaction is deleted ("<Name>: balance goes
+  up/down by <amount>"; credit cards: "amount due goes down/up by"). Amounts
+  only via Money; names passed through unchanged.
+
+### DeleteTransactionDialog / showDeleteTransactionDialog
+- File: widgets/delete_transaction_dialog.dart
+- Used by: TransactionFormSheet
+- Purpose: "Delete this transaction?" AlertDialog (scrollable): row summary,
+  the impact lines, "This can't be undone.", Cancel / Delete (danger).
+  Deletes through TransactionsDao.delete; errors stay inside the dialog
+  (buttons re-enabled); returns DeleteOutcome.deleted / notFound / null.
 
 ## Test support (test/support/)
 

@@ -7,10 +7,12 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import '../../../../core/db/app_database.dart';
 import '../../../../core/db/db_provider.dart';
 import '../../../../core/db/local_user_provider.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/app_dates.dart';
 import '../../../../core/utils/money.dart';
 import '../../../../shared/widgets/picker_sheet.dart';
+import '../../data/accounts_table.dart';
 import '../../data/categories_table.dart';
 import '../../data/transaction_queries.dart';
 import '../../data/transactions_dao.dart';
@@ -19,7 +21,10 @@ import '../account_display.dart';
 import '../category_display.dart';
 import '../providers/accounts_providers.dart';
 import '../providers/transactions_providers.dart';
+import '../transaction_delete_impact.dart';
+import '../transaction_display.dart';
 import 'account_form_sheet.dart';
+import 'delete_transaction_dialog.dart';
 
 /// With MORE than this many active accounts, the account choices (From, and
 /// To for transfers) become a picker field instead of chips.
@@ -80,6 +85,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   bool _dateTouched = false;
 
   bool _saving = false;
+
+  /// Edit mode: the delete confirmation is open.
+  bool _deleting = false;
   // Set synchronously at the start of _save, before any rebuild, so a second
   // tap in the same frame can never start a second save.
   bool _saveStarted = false;
@@ -301,6 +309,65 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         _formError = "Couldn't save. Please try again.";
       });
     }
+  }
+
+  /// Edit mode: asks to delete the STORED row (not unsaved edits). The
+  /// confirmation says how each account's balance changes; on success the
+  /// sheet closes and a SnackBar says so.
+  Future<void> _confirmDelete() async {
+    final existing = widget.existing;
+    final all = ref.read(accountsWithBalanceProvider).valueOrNull;
+    // The button is disabled until the accounts have loaded; this is only a
+    // guard.
+    if (existing == null || all == null || _saving || _deleting) return;
+    final t = existing.transaction;
+
+    DeleteImpactAccount accountFor(String id, String fallbackName) {
+      for (final a in all) {
+        if (a.account.id == id) {
+          return DeleteImpactAccount(a.account.name, a.account.type);
+        }
+      }
+      return DeleteImpactAccount(fallbackName, AccountType.other);
+    }
+
+    final toId = t.toAccountId;
+    final lines = deleteImpactLines(
+      type: t.type,
+      amountPaise: t.amount,
+      from: accountFor(t.accountId, existing.accountName),
+      to: toId == null
+          ? null
+          : accountFor(toId, existing.toAccountName ?? 'Unknown account'),
+    );
+    final summary =
+        '${transactionDisplay(existing).title} \u00B7 '
+        '${Money.format(t.amount)}';
+
+    // Captured before the sheet closes, so the SnackBar can still be shown.
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _deleting = true);
+    final outcome = await showDeleteTransactionDialog(
+      context,
+      transactionId: t.id,
+      summary: summary,
+      impactLines: lines,
+    );
+    if (!mounted) return;
+    if (outcome == null) {
+      setState(() => _deleting = false);
+      return;
+    }
+    Navigator.of(context).pop();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          outcome == DeleteOutcome.deleted
+              ? 'Transaction deleted'
+              : 'That transaction no longer exists',
+        ),
+      ),
+    );
   }
 
   /// Edit mode: the DAO said an account is archived. Say which field, and
@@ -685,9 +752,42 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
         // 8. Save
         ElevatedButton(
-          onPressed: (_saving || noCategories) ? null : _save,
+          onPressed: (_saving || _deleting || noCategories) ? null : _save,
           child: Text(saveLabel),
         ),
+
+        // 9. Delete (edit mode only). A TextButton, so Save stays the only
+        // ElevatedButton. Disabled while saving or deleting, and until the
+        // accounts the confirmation describes have loaded.
+        if (_isEdit) ...[
+          const SizedBox(height: AppSpacing.sm),
+          TextButton(
+            key: const ValueKey('tx_delete_button'),
+            style: TextButton.styleFrom(
+              foregroundColor:
+                  (theme.brightness == Brightness.dark
+                          ? AppColors.dark
+                          : AppColors.light)
+                      .danger,
+            ),
+            onPressed: (_saving || _deleting || allAccounts == null)
+                ? null
+                : _confirmDelete,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(PhosphorIconsRegular.trash, size: 20),
+                const SizedBox(width: AppSpacing.sm),
+                const Flexible(
+                  child: Text(
+                    'Delete transaction',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -41,9 +41,9 @@ HANDOFF.md).
 - [x] Widget-test infrastructure: narrow google_fonts filter, stable DB tests
 - [x] Full transactions list: See all, lazy date-grouped list, type filter chips — 4b-2a
 - [x] Edit a transaction + locked rows (tappable on Recent and the full list) — 4b-2b
+- [x] Delete a transaction (confirm with per-account balance change, edit sheet only) — 4b-2c
 
 ### Next up, in this order
-- [ ] **4b-2c** Delete a transaction with a confirm that says how the balance changes.
 - [ ] **Fonts** Bundle Fraunces + Karla as app assets (offline-first first
       launch, no first-use download stutter, removes the test font noise and
       lets the test font filter be retired). Same font versions as today.

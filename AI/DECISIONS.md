@@ -595,3 +595,25 @@ AppDates.occurredAtFor, i.e. 12:00); the row's own archived category/accounts
 are shown marked "(archived)" only in the slot they occupy; switching
 expense/income still clears the category. DAO errors show inline; a vanished
 row closes the sheet with a SnackBar. Delete is 4b-2c.
+
+### 2026-11-07 — Delete a transaction (Phase 2, Task 4b-2c)
+Delete lives in the EDIT sheet only: a "Delete transaction" TextButton
+(danger colour, trash icon) below Save, shown in edit mode only (not in add
+mode, not in the locked-row explanation). There is no swipe, long-press or
+bulk delete. It opens a confirm dialog that states, per affected account, how
+the balance changes when the row is deleted: expense -> balance goes up;
+income -> goes down; transfer -> From up, To down. A credit card shows what
+is owed, so its lines say "amount due goes down/up by" (expense on a card:
+due down; income: due up; transfer FROM a card: due down; TO a card: due up).
+The lines come from a pure function, deleteImpactLines, using Money; they
+describe the STORED row, not unsaved form edits. Account names/types come
+from accountsWithBalanceProvider (archived accounts included, so a row on an
+archived account can still be deleted). The dialog itself calls
+TransactionsDao.delete, so errors are shown INSIDE the dialog, which stays
+open with Cancel working: balanceOutOfRange ("Can't delete this: it would
+make an account balance too large."), linkedToSource, anything else ("Couldn't
+delete. Please try again."); notFound closes dialog and sheet with a SnackBar
+"That transaction no longer exists". A double tap deletes once (flag set
+synchronously). On success the dialog and sheet close and a SnackBar says
+"Transaction deleted". Locked rows (with a source) are never deletable here.
+No undo yet: a possible later feature. No DAO rule change.
