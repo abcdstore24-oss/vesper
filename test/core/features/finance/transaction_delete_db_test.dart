@@ -22,7 +22,6 @@ final _dialog = find.byType(AlertDialog);
 final _deleteButton = find.byKey(const ValueKey('tx_delete_button'));
 final _confirm = find.byKey(const ValueKey('delete_confirm_button'));
 final _cancel = find.byKey(const ValueKey('delete_cancel_button'));
-final _categoryField = find.byKey(const ValueKey('category_field'));
 
 class _Seed {
   _Seed(this.db, this.userId, this.acct);

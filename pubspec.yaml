@@ -86,6 +86,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Bundled fonts (offline-first): the google_fonts package looks for its font
+  # files in the app's assets, so the locked fonts (Fraunces + Karla) never
+  # need a first-use download. The folder holds exactly the files google_fonts
+  # fetches today (Fraunces-Medium/-SemiBold, Karla-Regular/-Medium/-SemiBold).
+  assets:
+    - google_fonts/
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

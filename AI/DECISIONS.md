@@ -617,3 +617,23 @@ delete. Please try again."); notFound closes dialog and sheet with a SnackBar
 synchronously). On success the dialog and sheet close and a SnackBar says
 "Transaction deleted". Locked rows (with a source) are never deletable here.
 No undo yet: a possible later feature. No DAO rule change.
+
+### 2026-11-09 — Bundle the locked fonts as assets (offline-first)
+Fraunces and Karla (locked, CLAUDE.md Section 3) are now bundled so the app
+never needs a first-use download. A root-level google_fonts/ folder is
+declared under flutter: assets: in pubspec.yaml; the google_fonts package
+(6.3.3) finds files there whose name ends in <Family>-<Weight>.ttf. The
+folder holds exactly the five files google_fonts 6.3.3 fetches today for the
+variants the app requests: Fraunces-Medium (500), Fraunces-SemiBold (600),
+Karla-Regular (400), Karla-Medium (500), Karla-SemiBold (600) (checked:
+AppTypography uses Fraunces 500/600 and Karla 400/600; the Karla text theme
+roles used by Material widgets add Karla 500; there is no italic or bold
+anywhere). Theme and typography code are unchanged, GoogleFonts runtime
+fetching is left as is, and the test font filter (disableFontFetching and
+the missing-font helpers in ui_test_helpers.dart) is kept for now; it can be
+retired in a later task. Tests now run with real Fraunces/Karla metrics
+instead of the fallback font. A guard test, test/core/theme/
+bundled_fonts_test.dart, fails if a file is missing, smaller than 10 KB, or
+not a real font (for example an HTML error page saved as .ttf), or if
+pubspec.yaml no longer declares google_fonts/. The OFL license files are
+decided separately.

@@ -42,11 +42,9 @@ HANDOFF.md).
 - [x] Full transactions list: See all, lazy date-grouped list, type filter chips — 4b-2a
 - [x] Edit a transaction + locked rows (tappable on Recent and the full list) — 4b-2b
 - [x] Delete a transaction (confirm with per-account balance change, edit sheet only) — 4b-2c
+- [x] Fonts: bundle Fraunces + Karla as app assets (offline-first).
 
 ### Next up, in this order
-- [ ] **Fonts** Bundle Fraunces + Karla as app assets (offline-first first
-      launch, no first-use download stutter, removes the test font noise and
-      lets the test font filter be retired). Same font versions as today.
 - [ ] **Categories** Manage categories: add your own, rename, archive/restore
       (built-ins can be renamed/archived, never deleted). Pickers already
       handle long lists.
