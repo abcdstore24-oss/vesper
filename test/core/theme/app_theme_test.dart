@@ -68,6 +68,15 @@ void main() {
         expect(chip.showCheckmark, isFalse);
         expect(chip.labelStyle?.color, palette.textPrimary);
       });
+
+      testWidgets('buildTestTheme returns the matching brightness', (
+        tester,
+      ) async {
+        final theme = buildTestTheme(
+          isDark ? Brightness.dark : Brightness.light,
+        );
+        expect(theme.brightness, isDark ? Brightness.dark : Brightness.light);
+      });
     });
   }
 }

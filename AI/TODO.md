@@ -43,6 +43,7 @@ HANDOFF.md).
 - [x] Edit a transaction + locked rows (tappable on Recent and the full list) — 4b-2b
 - [x] Delete a transaction (confirm with per-account balance change, edit sheet only) — 4b-2c
 - [x] Fonts: bundle Fraunces + Karla as app assets (offline-first).
+- [x] Test font filter retired (fonts are bundled; a missing font variant now fails tests).
 
 ### Next up, in this order
 - [ ] **Categories** Manage categories: add your own, rename, archive/restore

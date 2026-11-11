@@ -271,16 +271,19 @@ Entry format:
 
 ### UI test helpers
 - File: ui_test_helpers.dart
-- Purpose: disableFontFetching, buildTestTheme / runIgnoringMissingFonts /
-  isMissingFontError (the narrow google_fonts filter), pumpUi, settle,
+- Purpose: disableFontFetching (tests never use the network), buildTestTheme
+  (AppTheme.light / AppTheme.dark, built directly), pumpUi, settle,
   settleUntil, tapChip, DbHarness, makeAccount / makeAccountRow,
   accountsOverride, recentTransactionsOverride, makeTransactionItem.
-- Notes: build AppTheme only through buildTestTheme, never at file load.
-  DbHarness.dispose(tester) must be the LAST line of a DB-backed widget test.
-  DB tests that create several accounts must give them distinct created_at
-  (whole-second resolution). Providers that load lazily need settle/settleUntil
-  after the action that first shows them; wait on a condition, never a fixed
-  delay. Layout tests should override providers instead of using a database.
+- Notes: no font filter any more: Fraunces and Karla are bundled, so a missing
+  or wrong font variant throws and fails the test. Build AppTheme only through
+  buildTestTheme and only inside test bodies, never at file load (google_fonts
+  reads the font assets through the test binding). DbHarness.dispose(tester)
+  must be the LAST line of a DB-backed widget test. DB tests that create several
+  accounts must give them distinct created_at (whole-second resolution).
+  Providers that load lazily need settle/settleUntil after the action that
+  first shows them; wait on a condition, never a fixed delay. Layout tests
+  should override providers instead of using a database.
 
 ### makeInMemoryContainer / pumpUntil
 - File: test_db.dart

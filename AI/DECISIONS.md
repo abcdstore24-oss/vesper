@@ -637,3 +637,18 @@ bundled_fonts_test.dart, fails if a file is missing, smaller than 10 KB, or
 not a real font (for example an HTML error page saved as .ttf), or if
 pubspec.yaml no longer declares google_fonts/. The OFL license files are
 decided separately.
+
+### 2026-11-11 — Test font filter retired (supersedes 2026-10-20 "Test fonts: narrow filter")
+The five locked font files are bundled as assets (2026-11-09), so google_fonts
+no longer throws the missing-asset error in tests. The workaround that swallowed
+it is removed: isMissingFontError and runIgnoringMissingFonts are deleted from
+test/support/ui_test_helpers.dart, together with their test file
+run_ignoring_missing_fonts_test.dart (13 tests: 12 for the two helpers and one
+that checked buildTestTheme's light/dark themes, which app_theme_test.dart
+covers through its per-theme token assertions). A missing or wrong font variant
+now fails a test loudly; nothing re-adds a catch-all for google_fonts errors.
+disableFontFetching stays (tests must never use the network). buildTestTheme
+stays with the same name and signature but builds AppTheme directly; the rule
+"build AppTheme inside test bodies, never at file load" stays because
+google_fonts reads the font assets through the test binding. Tests-only change:
+nothing under lib/, pubspec.yaml or google_fonts/ changed.

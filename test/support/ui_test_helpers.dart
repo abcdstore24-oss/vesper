@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,48 +14,18 @@ import 'package:vesper/features/finance/presentation/providers/transactions_prov
 
 import 'test_db.dart';
 
-/// Call once per test file (setUpAll). Stops google_fonts from trying the
-/// network in tests; it then fails quietly and text falls back to the test
-/// font (Ahem: every glyph is a 1em square, so widths are very pessimistic).
+/// Call once per test file (setUpAll). Stops google_fonts from using the
+/// network in tests. The locked fonts are bundled as assets (google_fonts/),
+/// so every variant the app requests loads from there; a variant that is
+/// missing or wrong now throws and fails the test loudly.
 void disableFontFetching() {
   GoogleFonts.config.allowRuntimeFetching = false;
 }
 
-/// True ONLY for the exception google_fonts throws when a font file is not in
-/// the app's assets and runtime fetching is off (as in the test sandbox):
-/// an [Exception] (not an Error) whose message contains BOTH
-/// "allowRuntimeFetching is false but font" and "was not found in the
-/// application assets". Anything else is false.
-bool isMissingFontError(Object error) {
-  if (error is! Exception) return false;
-  final text = error.toString();
-  return text.contains('allowRuntimeFetching is false but font') &&
-      text.contains('was not found in the application assets');
-}
-
-/// Runs [body] in a guarded zone that IGNORES [isMissingFontError] errors
-/// and re-reports every other error, unchanged, to the zone this was called
-/// from. Futures belong to the zone they were created in, so anything
-/// google_fonts starts while [body] runs reports here, even after [body]
-/// returns. Returns null if [body] throws synchronously (re-reported).
-T? runIgnoringMissingFonts<T>(T Function() body) {
-  final outer = Zone.current;
-  return runZonedGuarded<T>(body, (error, stackTrace) {
-    if (isMissingFontError(error)) return;
-    outer.handleUncaughtError(error, stackTrace);
-  });
-}
-
-/// AppTheme.light / AppTheme.dark, built where google_fonts' missing-font
-/// errors are ignored. Use this instead of calling AppTheme directly in tests.
+/// AppTheme.light / AppTheme.dark. Build it INSIDE a test body, never at file
+/// load: google_fonts reads the bundled font assets through the test binding.
 ThemeData buildTestTheme(Brightness brightness) {
-  final theme = runIgnoringMissingFonts(
-    () => brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-  );
-  if (theme == null) {
-    throw StateError('Building the test theme failed (error reported above).');
-  }
-  return theme;
+  return brightness == Brightness.dark ? AppTheme.dark : AppTheme.light;
 }
 
 AccountRow makeAccountRow({
