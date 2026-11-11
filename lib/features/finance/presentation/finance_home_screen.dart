@@ -3,6 +3,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import 'accounts_screen.dart';
+import 'categories_screen.dart';
 import 'widgets/balance_summary.dart';
 import 'widgets/recent_transactions.dart';
 import 'widgets/transaction_form_sheet.dart';
@@ -75,6 +76,29 @@ class FinanceHomeScreen extends StatelessWidget {
               onTap: () => Navigator.of(
                 context,
               ).push(MaterialPageRoute(builder: (_) => const AccountsScreen())),
+            ),
+          ),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              leading: Icon(
+                PhosphorIconsRegular.tag,
+                color: theme.colorScheme.onSurface,
+              ),
+              title: Text('Categories', style: theme.textTheme.bodyLarge),
+              subtitle: Text(
+                'Add, rename, archive',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              trailing: Icon(
+                PhosphorIconsRegular.caretRight,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+              ),
             ),
           ),
         ],

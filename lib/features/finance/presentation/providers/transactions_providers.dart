@@ -46,6 +46,18 @@ final categoriesByKindProvider =
       yield* CategoriesDao(db).watchByKind(userId, kind);
     });
 
+/// ALL of the user's categories of a kind (expense or income), archived ones
+/// included, for the Categories management screen. autoDispose: it lives only
+/// while that screen is open. The active-only [categoriesByKindProvider] is
+/// unchanged.
+final manageCategoriesProvider = StreamProvider.autoDispose
+    .family<List<CategoryRow>, CategoryKind>((ref, kind) async* {
+      assert(kind != CategoryKind.system, 'system categories are not managed');
+      final db = ref.watch(appDatabaseProvider);
+      final userId = await ref.watch(localUserIdProvider.future);
+      yield* CategoriesDao(db).watchByKind(userId, kind, includeArchived: true);
+    });
+
 /// Up to 5 of the user's most recently USED active categories of a kind
 /// (newest use first), for the one-tap "Recent" chips in the add sheet.
 /// Re-emits when transactions or categories change.

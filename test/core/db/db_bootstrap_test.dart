@@ -642,9 +642,11 @@ void main() {
   });
 
   group('source guard', () {
-    test('CategoriesDao offers no delete or update', () {
-      // Built-ins may be renamed/archived but never deleted, and there is no
-      // edit UI yet, so the DAO must not expose either.
+    test('CategoriesDao offers no delete', () {
+      // Categories are never deleted: built-in and user-made ones are only
+      // renamed, restyled and archived. Updating is allowed since the manage-
+      // categories task (edit / setArchived), so only delete*/remove* and
+      // `.delete(` are forbidden.
       final source = File(
         'lib/features/finance/data/categories_dao.dart',
       ).readAsStringSync();
@@ -654,9 +656,8 @@ void main() {
           .join('\n');
 
       expect(code.contains('.delete('), isFalse);
-      expect(code.contains('.update('), isFalse);
       expect(
-        RegExp(r'Future<[^>]*>\s+(delete|update|remove)\w*\(').hasMatch(code),
+        RegExp(r'Future<[^>]*>\s+(delete|remove)\w*\(').hasMatch(code),
         isFalse,
       );
     });

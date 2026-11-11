@@ -46,12 +46,18 @@ table must follow.
   kind [income/expense/system, stored by name, no CHECK], seed_key
   [nullable; stable id for built-in categories, NULL for user-made],
   is_archived [default false], created_at, updated_at). UNIQUE (user_id,
-  seed_key); index (user_id, kind). Built-ins may be renamed/archived,
-  never deleted. `system` categories (seed_key sys_*) label loan/investment
-  money movements: never user-pickable, never counted as income/expense,
-  never in budgets or charts. Seeded: sys_loan_given,
-  sys_loan_repayment_received, sys_loan_taken, sys_loan_repayment_made,
-  sys_investment_buy, sys_investment_sell. Local schema v2.
+  seed_key); index (user_id, kind). Built-ins and user-made categories may be
+  renamed, restyled (icon, colour) and archived/restored, never deleted; the
+  kind and seed_key never change after creation. User-made rules (enforced by
+  CategoriesDao): name trimmed, 1-40 characters, unique per (user, kind)
+  ignoring case and counting ARCHIVED rows too; icon a snake_case key (max 40
+  characters); colour opaque 0xFFRRGGBB; only expense/income can be created
+  (seed_key stays NULL). `system` categories (seed_key sys_*) label
+  loan/investment money movements: never user-pickable, never counted as
+  income/expense, never in budgets or charts, never edited or archived by the
+  user. Seeded: sys_loan_given, sys_loan_repayment_received, sys_loan_taken,
+  sys_loan_repayment_made, sys_investment_buy, sys_investment_sell. Local
+  schema v2.
 - `transactions` (id, user_id NOT NULL, account_id NOT NULL [the account
   money leaves/enters; for a transfer the FROM account], to_account_id
   [transfers only], category_id [none for transfers], amount [integer paise,

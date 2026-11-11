@@ -270,7 +270,7 @@ void main() {
     }
 
     final lastBottom = tester
-        .getBottomLeft(find.widgetWithText(ListTile, 'Accounts'))
+        .getBottomLeft(find.widgetWithText(ListTile, 'Categories'))
         .dy;
     final fabTop = tester.getTopLeft(find.byType(FloatingActionButton)).dy;
     expect(lastBottom, lessThanOrEqualTo(fabTop));

@@ -102,9 +102,13 @@ Entry format:
 
 ### CategoriesDao
 - File: categories_dao.dart
-- Purpose: watchByKind, getById, getBySeedKey, getAll, insert.
-- Notes: deliberately NO update/delete (built-ins can be renamed/archived but
-  never deleted); a source-guard test enforces it.
+- Purpose: watchByKind (optional includeArchived), getById, getBySeedKey,
+  getAll, insert, plus the validated user writes create / edit / setArchived
+  (throw CategoryValidationException). Name rules: trimmed, 1-40 chars, unique
+  per (user, kind) ignoring case, archived rows counted; icon snake_case key;
+  colour opaque 0xFFRRGGBB.
+- Notes: NO delete/remove (a source-guard test enforces it); update is allowed.
+  kind and seed_key never change; system rows are refused.
 
 ### computeBalancePaise / totalBalancePaise / creditCardDuesPaise
 - File: account_balance.dart
@@ -266,6 +270,32 @@ Entry format:
   the impact lines, "This can't be undone.", Cancel / Delete (danger).
   Deletes through TransactionsDao.delete; errors stay inside the dialog
   (buttons re-enabled); returns DeleteOutcome.deleted / notFound / null.
+
+### CategoriesScreen
+- File: categories_screen.dart
+- Used by: FinanceHomeScreen (Manage > Categories)
+- Purpose: Expense | Income chips (always visible); lazy list of the chosen
+  kind (active A-Z, then an "Archived" section); one Card per row (colour-tinted
+  icon circle, name, "Built-in" / "Archived" subtitle); tap edits; + adds;
+  system categories never shown. Loading = spinner, error = message + Retry.
+
+### CategoryFormSheet / showCategoryFormSheet
+- File: widgets/category_form_sheet.dart
+- Used by: CategoriesScreen
+- Purpose: add / edit a category: live preview, name (max 40), icon grid (20),
+  colour swatches (12), fixed kind (read-only text in edit mode), "Built-in
+  category" caption; edit mode has Archive / Restore (neutral TextButton, no
+  confirm, SnackBar). Inline name errors; double-tap safe.
+
+### categoryIconChoices / categoryColorChoices
+- File: category_choices.dart
+- Purpose: the const palettes the category sheet offers (20 non-system icon
+  keys, tag first; 12 distinct built-in colours).
+
+### flattenCategories / CategoryListEntry
+- File: category_list_entries.dart
+- Purpose: pure function: active rows A-Z, then an "Archived" header and the
+  archived rows; system categories dropped.
 
 ## Test support (test/support/)
 

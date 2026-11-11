@@ -652,3 +652,31 @@ stays with the same name and signature but builds AppTheme directly; the rule
 "build AppTheme inside test bodies, never at file load" stays because
 google_fonts reads the font assets through the test binding. Tests-only change:
 nothing under lib/, pubspec.yaml or google_fonts/ changed.
+
+### 2026-11-11 — Manage categories (Phase 2)
+A Categories screen (Finance home > Manage > Categories) lists the Expense or
+Income categories (chips; active A-Z, then an "Archived" section) and edits
+them through CategoryFormSheet (name, icon, colour, archive/restore). System
+categories never appear. Nothing is ever deleted: a category is archived
+instead, and the DAO has no delete/remove method. The source-guard test in
+db_bootstrap_test.dart was amended: it still forbids ".delete(" and any
+delete*/remove* method, but no longer forbids update (its reason, "no edit UI
+yet", no longer holds).
+CategoriesDao gained create / edit / setArchived, all validated and throwing
+CategoryValidationException: names are trimmed, 1-40 characters, unique per
+(user, kind) ignoring case, ARCHIVED rows counted too (so a restore can never
+clash; a separate error says the clash is in Archived); icon = a snake_case key
+(max 40 characters); colour = opaque 0xFFRRGGBB. The kind is fixed: create
+refuses system, edit never changes kind or seed_key, system rows cannot be
+edited or archived. Built-ins can be renamed and restyled (their seed_key never
+changes, so the seeder still recognises them). The DAO knows no palettes; the UI
+offers 20 icons (the non-system keys of category_display.dart, tag first) and 12
+colours (the distinct colours of the built-in expense/income defaults), in
+category_choices.dart. Archiving has no confirmation (it is reversible):
+the sheet closes and a SnackBar says "Category archived" / "Category
+restored". Archiving the last active category of a kind is allowed (the add
+sheet already handles "no categories"). manageCategoriesProvider (autoDispose
+family on expense/income) streams all rows incl. archived; the active-only
+categoriesByKindProvider is unchanged. No schema change, no migration, no
+seeder change. Deferred: more icon keys (new keys need category_display.dart
+first).

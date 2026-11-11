@@ -44,11 +44,10 @@ HANDOFF.md).
 - [x] Delete a transaction (confirm with per-account balance change, edit sheet only) — 4b-2c
 - [x] Fonts: bundle Fraunces + Karla as app assets (offline-first).
 - [x] Test font filter retired (fonts are bundled; a missing font variant now fails tests).
+- [x] Manage categories: add your own, rename/restyle (name, icon, colour), archive/restore; 
+      built-ins editable, nothing deleted.
 
 ### Next up, in this order
-- [ ] **Categories** Manage categories: add your own, rename, archive/restore
-      (built-ins can be renamed/archived, never deleted). Pickers already
-      handle long lists.
 - [ ] **4d** Account archive/delete: delete only if the account has no
       transactions; otherwise archive, and only when its balance is zero.
       Archived accounts stay in history, are hidden from pickers.
