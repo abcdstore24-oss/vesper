@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vesper/core/theme/app_colors.dart';
 import 'package:vesper/features/finance/data/accounts_table.dart';
 import 'package:vesper/features/finance/presentation/accounts_screen.dart';
+import 'package:vesper/features/finance/presentation/providers/accounts_providers.dart';
 import 'package:vesper/features/finance/presentation/widgets/account_form_sheet.dart';
 import 'package:vesper/shared/widgets/dashboard_card.dart';
 
@@ -135,7 +136,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('archived accounts are hidden', (tester) async {
+  testWidgets('archived accounts are listed under "Archived", not above', (
+    tester,
+  ) async {
     await pumpUi(
       tester,
       const AccountsScreen(),
@@ -147,8 +150,20 @@ void main() {
       ],
     );
 
+    // Task 4d: archived accounts are no longer hidden; they sit below the
+    // active ones under an "Archived" header (see account_actions_sheet_test.dart).
     expect(find.text('Shown'), findsOneWidget);
-    expect(find.text('Hidden'), findsNothing);
+    expect(find.text('Hidden'), findsOneWidget);
+    final header = find.byKey(const ValueKey('accounts-archived-header'));
+    expect(header, findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Shown')).dy,
+      lessThan(tester.getTopLeft(header).dy),
+    );
+    expect(
+      tester.getTopLeft(header).dy,
+      lessThan(tester.getTopLeft(find.text('Hidden')).dy),
+    );
   });
 
   testWidgets('empty state reuses DashboardCard with an Add account button', (
@@ -200,6 +215,9 @@ void main() {
         accountsOverride([
           makeAccount(id: 'a', name: 'Savings', balance: 125050),
         ]),
+        // The edit sheet also asks whether the account has transactions
+        // (Task 4d); answer it here so this no-database test never opens one.
+        accountHasTransactionsProvider.overrideWith((ref, id) async => false),
       ],
     );
 

@@ -438,23 +438,6 @@ void main() {
   });
 
   group('source guard', () {
-    test('AccountsDao offers no delete or archive', () {
-      final source = File(
-        'lib/features/finance/data/accounts_dao.dart',
-      ).readAsStringSync();
-      final code = source
-          .split('\n')
-          .where((l) => !l.trim().startsWith('//'))
-          .join('\n');
-
-      expect(code.contains('.delete('), isFalse);
-      expect(code.toLowerCase().contains('archive'), isFalse);
-      expect(
-        RegExp(r'Future<[^>]*>\s+(delete|remove|archive)\w*\(').hasMatch(code),
-        isFalse,
-      );
-    });
-
     test('money code uses no floating point', () {
       for (final path in [
         'lib/features/finance/data/accounts_dao.dart',

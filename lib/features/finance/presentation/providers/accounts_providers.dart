@@ -30,3 +30,12 @@ final totalBalanceProvider = Provider<AsyncValue<int>>((ref) {
 final creditCardDuesProvider = Provider<AsyncValue<int>>((ref) {
   return ref.watch(accountsWithBalanceProvider).whenData(creditCardDuesPaise);
 });
+
+/// Whether any transaction refers to account [id] (as From or To), for the
+/// account sheet's Delete / Archive choices. Read once per open sheet
+/// (autoDispose); AccountsDao.delete re-checks inside its own transaction at
+/// action time, so a stale answer can never delete an account in use.
+final accountHasTransactionsProvider = FutureProvider.autoDispose
+    .family<bool, String>((ref, id) {
+      return AccountsDao(ref.watch(appDatabaseProvider)).hasTransactions(id);
+    });

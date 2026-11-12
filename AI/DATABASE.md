@@ -41,6 +41,13 @@ table must follow.
   updated_at). Index (user_id). Local schema v3. Balance is never stored:
   computed in account_balance.dart. Total Balance excludes credit-card
   accounts; they are shown separately as "card dues" (see DECISIONS.md).
+  Rules (AccountsDao): an account may be DELETED only if no transactions row
+  has it as account_id or to_account_id (modules that later reference accounts,
+  such as loans and investments, must extend that check); it may be ARCHIVED
+  (is_archived) only when its computed balance is exactly zero, stays in history,
+  is hidden from pickers, keeps its name reserved, and can be restored. An
+  archived account can only be renamed. Each check and write is one database
+  transaction.
 - `categories` (id, user_id NOT NULL, name, icon [Phosphor key, snake_case],
   color [int 0xFFRRGGBB; defaults defined in category_seeder.dart],
   kind [income/expense/system, stored by name, no CHECK], seed_key

@@ -46,11 +46,10 @@ HANDOFF.md).
 - [x] Test font filter retired (fonts are bundled; a missing font variant now fails tests).
 - [x] Manage categories: add your own, rename/restyle (name, icon, colour), archive/restore; 
       built-ins editable, nothing deleted.
+- [x] **4d** Account archive / restore / delete (delete only with no transactions; 
+      archive only at a zero balance).
 
 ### Next up, in this order
-- [ ] **4d** Account archive/delete: delete only if the account has no
-      transactions; otherwise archive, and only when its balance is zero.
-      Archived accounts stay in history, are hidden from pickers.
 - [ ] **Monthly summary** Income / expense / saved for a chosen month with a
       month switcher; counts only transactions WITHOUT a source (no loan or
       investment rows); transfers are not income or expense.

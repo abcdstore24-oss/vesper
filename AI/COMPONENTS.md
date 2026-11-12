@@ -87,15 +87,22 @@ Entry format:
 - File: accounts_dao.dart
 - Purpose: insert/update/read accounts with name + balance validation.
   watchAccountsWithBalance(userId) streams accounts with computed balances.
-- Notes: no delete/archive until Task 4d. Name rules live here, not in the UI.
+  Also hasTransactions, archive (only at a balance of exactly zero, via the
+  one balance formula), restore, and delete (only with no transactions as
+  From or To); each check and write in one database transaction. Throws
+  AccountValidationException (name errors, notFound, balanceNotZero,
+  hasTransactions). update() keeps its ArgumentError behaviour.
+- Notes: name rules live here, not in the UI. Archived accounts keep their
+  names reserved. Future modules that reference accounts (loans, investments)
+  must extend hasTransactions and delete with their own references.
 
 ### TransactionsDao
 - File: transactions_dao.dart
-- Purpose: insert / update / delete / getById / watchRecent / watchAll(userId, 
-  {type}). Validates, writes and checks the balance range in ONE database transaction; 
-  throws TransactionValidationException(error). TransactionsDao(db, {clock}).
-  update accepts an archived category only if it is the row's current category; 
-  archived accounts are still rejected.
+- Purpose: insert / update / delete / getById / watchRecent / watchAll(userId,
+  {type}). Validates, writes and checks the balance range in ONE database
+  transaction; throws TransactionValidationException(error).
+  TransactionsDao(db, {clock}). update accepts an archived category only if it
+  is the row's current category; archived accounts are still rejected.
 - Notes: bySource: true (update/delete) is for loans/investments code only;
   rows with a source are otherwise locked (linkedToSource). No dates after the
   end of today.
@@ -118,22 +125,25 @@ Entry format:
   (credit cards and archived excluded). creditCardDuesPaise = sum over
   non-archived cards of max(0, −balance): never netted across cards, may exceed
   Money.maxPaise (exact sum; the UI handles display).
-- Notes: nothing else may compute a balance.
+- Notes: nothing else may compute a balance (AccountsDao.archive reuses it
+  through selectAccountsWithBalance).
 
 ### selectAccountsWithBalance
 - File: balance_queries.dart
 - Purpose: one SQL query: accounts + per-account transaction sums; reads
   accounts AND transactions so .watch() re-emits on either. Used by
-  AccountsDao.watchAccountsWithBalance and TransactionsDao's range check.
+  AccountsDao.watchAccountsWithBalance, AccountsDao.archive and
+  TransactionsDao's range check.
 
 ### selectRecentTransactions / TransactionListItem
 - File: transaction_queries.dart
-- Purpose: joined rows (category name/icon, account names) of a user's 
-  transactions: selectRecentTransactions(db, {userId, type?, limit?}); type 
-  filters in SQL (null = all), limit null = no limit; order occurred_at, 
-  created_at, rowid (all descending). LEFT joins ignore is_archived, so archived 
-  names still show; sourced rows included. Reads transactions, categories and 
-  accounts. Named "Recent" for history; the full list uses it with no limit.
+- Purpose: joined rows (category name/icon, account names) of a user's
+  transactions: selectRecentTransactions(db, {userId, type?, limit?}); type
+  filters in SQL (null = all), limit null = no limit; order occurred_at,
+  created_at, rowid (all descending). LEFT joins ignore is_archived, so
+  archived names still show; sourced rows included. Reads transactions,
+  categories and accounts. Named "Recent" for history; the full list uses it
+  with no limit.
 
 ### selectRecentCategories
 - File: category_queries.dart
@@ -143,27 +153,38 @@ Entry format:
 
 ## Providers (lib/features/finance/presentation/providers/)
 
-### accountsWithBalanceProvider / totalBalanceProvider / creditCardDuesProvider
+### accountsWithBalanceProvider / totalBalanceProvider / creditCardDuesProvider / accountHasTransactionsProvider
 - File: accounts_providers.dart
-- Purpose: live account list with balances (balances include transactions);
-  Total Balance; card dues.
+- Purpose: live account list with balances (balances include transactions;
+  archived accounts are included, the totals skip them); Total Balance; card
+  dues; accountHasTransactionsProvider (autoDispose family on account id):
+  whether any transaction refers to the account, for the account sheet's
+  Delete / Archive choices.
+- Notes: accountHasTransactionsProvider is read once per open sheet;
+  AccountsDao.delete re-checks inside its own transaction at action time.
 
-### recentTransactionsProvider, allTransactionsProvider (autoDispose family), 
-### categoriesByKindProvider (family), recentCategoriesProvider (family), 
-### activeAccountsProvider
+### recentTransactionsProvider, allTransactionsProvider (autoDispose family),
+### categoriesByKindProvider (family), recentCategoriesProvider (family),
+### manageCategoriesProvider (autoDispose family), activeAccountsProvider
 - File: transactions_providers.dart
-- Purpose: the 5 newest transactions; all of the user's transactions, 
-  newest first, optional SQL type filter (null = All); active categories 
-  of a kind; the 5 recently used categories of a kind; non-archived accounts.
-- Notes: all user-scoped streams await localUserIdProvider first. 
-  allTransactionsProvider is autoDispose and keyed by TransactionType? (null = All).
+- Purpose: the 5 newest transactions; all of the user's transactions, newest
+  first, optional SQL type filter (null = All); active categories of a kind;
+  the 5 recently used categories of a kind; ALL categories of a kind incl.
+  archived (for the Categories screen); non-archived accounts.
+- Notes: all user-scoped streams await localUserIdProvider first.
+  allTransactionsProvider is autoDispose and keyed by TransactionType? (null =
+  All). manageCategoriesProvider is autoDispose and keyed by CategoryKind
+  (expense/income only); categoriesByKindProvider stays active-only.
 
 ## Finance UI (lib/features/finance/presentation/)
 
 ### FinanceHomeScreen, AccountsScreen
-- Purpose: Finance tab (balance cards, Recent transactions, Manage, add FAB)
-  and the accounts list. Both lists have 96px bottom padding so the FAB never
-  covers the last row. The Finance FAB uses heroTag: null.
+- Purpose: Finance tab (balance cards, Recent transactions, a Manage section
+  with an Accounts card and a Categories card, add FAB) and the accounts list.
+  AccountsScreen shows the active accounts, and, only when any exist, an
+  "Archived" section of muted rows below them; tapping any row opens the edit
+  sheet. Both lists have 96px bottom padding so the FAB never covers the last
+  row. The Finance FAB uses heroTag: null.
 
 ### BalanceSummary
 - File: widgets/balance_summary.dart
@@ -180,35 +201,67 @@ Entry format:
 
 ### AccountFormSheet / showAccountFormSheet
 - File: widgets/account_form_sheet.dart
+- Used by: AccountsScreen (FAB and rows)
 - Purpose: add/edit account modal sheet. Card amount is typed as "owed" and
   stored negative. Switching card/non-card re-renders an untouched amount from
-  the stored balance (never flips a sign silently).
+  the stored balance (never flips a sign silently). Edit mode also has the
+  account's actions below Save: an ACTIVE account has "Archive account"
+  (neutral; enabled only at a balance of exactly zero, otherwise a muted
+  caption says to bring it to zero first; no confirmation; SnackBar) and
+  "Delete account" (danger; shown only when no transaction refers to it,
+  otherwise a caption says to archive instead; opens DeleteAccountDialog). An
+  ARCHIVED account offers "Restore account" and only its NAME is editable (type
+  chips and the starting-balance field are disabled).
+- Notes: the actions are disabled until the balance and the has-transactions
+  answer have loaded, and while Save or another action is running (a flag set
+  synchronously guards double taps). Add mode has no actions.
+
+### DeleteAccountDialog / showDeleteAccountDialog
+- File: widgets/delete_account_dialog.dart
+- Used by: AccountFormSheet
+- Purpose: "Delete this account?" AlertDialog (scrollable, not dismissible by a
+  tap outside): the account name (wraps), what disappears (impact lines),
+  "This can't be undone.", Cancel / Delete (danger). Deletes through
+  AccountsDao.delete; errors (hasTransactions, generic) stay inside the dialog
+  with the buttons re-enabled; returns DeleteAccountOutcome.deleted / notFound
+  / null.
+
+### deleteAccountImpactLines
+- File: account_delete_impact.dart
+- Used by: AccountFormSheet (delete confirmation)
+- Purpose: pure function: zero starting balance -> "It has no transactions and
+  a zero starting balance."; normal account -> its starting balance no longer
+  counts in Total balance; credit card -> its starting amount due no longer
+  counts in Card dues (a starting credit: no longer counted). Amounts only via
+  Money.
 
 ### TransactionFormSheet / showTransactionFormSheet
 - File: widgets/transaction_form_sheet.dart
-- Purpose: add OR edit: showTransactionFormSheet(context, {existing}). Add mode 
-  records an expense, income or transfer. Edit mode (existing: TransactionListItem): 
-  title "Edit transaction", button "Save changes", prefilled (amount via Money, plain 
-  digits), saves through TransactionsDao.update; the date keeps the original occurred_at 
-  unless picked; the row's own archived category/accounts are shown marked "(archived)"; 
-  archived-account errors ask for another account. Edit mode also has a "Delete transaction" 
-  TextButton (below Save) that opens DeleteTransactionDialog for the stored row; Save and 
-  Delete are both disabled while either is busy.
+- Purpose: add OR edit: showTransactionFormSheet(context, {existing}). Add mode
+  records an expense, income or transfer. Edit mode (existing:
+  TransactionListItem): title "Edit transaction", button "Save changes",
+  prefilled (amount via Money, plain digits), saves through
+  TransactionsDao.update; the date keeps the original occurred_at unless
+  picked; the row's own archived category/accounts are shown marked
+  "(archived)"; archived-account errors ask for another account. Edit mode also
+  has a "Delete transaction" TextButton (below Save) that opens
+  DeleteTransactionDialog for the stored row; Save and Delete are both
+  disabled while either is busy.
 
 ### TransactionTile
 - File: widgets/transaction_tile.dart
-- Purpose: one descriptive row: icon circle, title, subtitle, and a right 
-  column with the amount and, unless showDate is false, the date under it. onTap 
-  (optional) makes it an InkWell row (the Card around it must clip: Clip.antiAlias); 
-  a row with a source shows a small Phosphor lock next to the title. Without onTap it 
-  is not tappable.
+- Purpose: one descriptive row: icon circle, title, subtitle, and a right
+  column with the amount and, unless showDate is false, the date under it.
+  onTap (optional) makes it an InkWell row (the Card around it must clip:
+  Clip.antiAlias); a row with a source shows a small Phosphor lock next to the
+  title. Without onTap it is not tappable.
 
 ### RecentTransactions
 - File: widgets/recent_transactions.dart
-- Purpose: "Recent transactions" section: up to 5 tiles in one Card plus a "See all" 
-  header action (only when there is at least one row) opening TransactionsScreen; 
-  empty = DashboardCard; loading = spinner card; error = message + Retry.
-  Rows are tappable via openTransaction.
+- Purpose: "Recent transactions" section: up to 5 tiles in one Card plus a
+  "See all" header action (only when there is at least one row) opening
+  TransactionsScreen; empty = DashboardCard; loading = spinner card; error =
+  message + Retry. Rows are tappable via openTransaction.
 
 ### transaction_display
 - File: transaction_display.dart
@@ -229,8 +282,8 @@ Entry format:
   visible); one TransactionTile(showDate: false) per Card; lazy
   ListView.builder; own + FAB (heroTag: null) and 96px bottom padding.
   Loading = spinner, error = message + Retry, empty = DashboardCard (All) or a
-  short message (filters). Rows are tappable via openTransaction (edit sheet, or 
-  the locked explanation); delete is 4b-2c.
+  short message (filters). Rows are tappable via openTransaction (edit sheet,
+  or the locked explanation); delete lives in the edit sheet.
 - Notes: no pagination yet: every row of the chosen filter is loaded.
 
 ### groupTransactionsByDate / TransactionListEntry
@@ -250,10 +303,6 @@ Entry format:
 - Used by: openTransaction
 - Purpose: read-only details of a loan/investment row plus "Edit it from
   Loans" / "Edit it from Investments". No fields, no Save/Delete.
-
-### withSource (test support)
-- File: test/support/transaction_item_helpers.dart
-- Purpose: copies a TransactionListItem as a loan/investment row for tests.
 
 ### deleteImpactLines / DeleteImpactAccount
 - File: transaction_delete_impact.dart
@@ -303,8 +352,9 @@ Entry format:
 - File: ui_test_helpers.dart
 - Purpose: disableFontFetching (tests never use the network), buildTestTheme
   (AppTheme.light / AppTheme.dark, built directly), pumpUi, settle,
-  settleUntil, tapChip, DbHarness, makeAccount / makeAccountRow,
-  accountsOverride, recentTransactionsOverride, makeTransactionItem.
+  settleUntil, waitUntilSteady, tapChip, DbHarness, makeAccount /
+  makeAccountRow, accountsOverride, recentTransactionsOverride,
+  makeTransactionItem.
 - Notes: no font filter any more: Fraunces and Karla are bundled, so a missing
   or wrong font variant throws and fails the test. Build AppTheme only through
   buildTestTheme and only inside test bodies, never at file load (google_fonts
@@ -314,8 +364,17 @@ Entry format:
   Providers that load lazily need settle/settleUntil after the action that
   first shows them; wait on a condition, never a fixed delay. Layout tests
   should override providers instead of using a database.
+  waitUntilSteady(tester, finder) waits until the finder is on screen and has
+  stopped moving (a bottom sheet that has finished sliding in): tap inside a
+  sheet only after it. After pushing a route, scope finders to the new screen
+  (the route below still has widgets).
 
 ### makeInMemoryContainer / pumpUntil
 - File: test_db.dart
 - Purpose: Riverpod container on an empty in-memory database; pumpUntil waits
   for a condition.
+
+### withSource
+- File: transaction_item_helpers.dart
+- Purpose: copies a TransactionListItem as a loan/investment row (it has a
+  source) for tests of locked rows.

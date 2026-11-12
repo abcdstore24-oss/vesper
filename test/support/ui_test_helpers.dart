@@ -186,6 +186,25 @@ Future<void> settleUntil(
   }
 }
 
+/// Waits until [finder] is on screen AND has stopped moving between rounds:
+/// a bottom sheet that has finished sliding in, or a route that has finished
+/// its transition. Tap inside a sheet only after this. Pass something that
+/// sits inside the sheet (for example its Save button). At most [maxRounds].
+Future<void> waitUntilSteady(
+  WidgetTester tester,
+  Finder finder, {
+  int maxRounds = 40,
+}) async {
+  double? last;
+  await settleUntil(tester, () {
+    if (finder.evaluate().isEmpty) return false;
+    final y = tester.getTopLeft(finder.first).dy;
+    final steady = last != null && (y - last!).abs() < 0.01;
+    last = y;
+    return steady;
+  }, maxRounds: maxRounds);
+}
+
 /// Scrolls [target] into view, taps it and pumps once. (Data that loads
 /// lazily needs settle/settleUntil afterwards; a bare pump is not enough.)
 Future<void> tapChip(WidgetTester tester, Finder target) async {

@@ -680,3 +680,30 @@ family on expense/income) streams all rows incl. archived; the active-only
 categoriesByKindProvider is unchanged. No schema change, no migration, no
 seeder change. Deferred: more icon keys (new keys need category_display.dart
 first).
+
+### 2026-11-12 — Account archive / restore / delete (4d)
+AccountsDao gained hasTransactions, archive, restore and delete; the validation
+enum gained notFound, balanceNotZero and hasTransactions. DELETE is allowed only
+for an account that no transaction refers to (as the From account OR as the To
+account of a transfer); ARCHIVE only when the computed balance is exactly zero
+(it reuses selectAccountsWithBalance and computeBalancePaise: there is no second
+balance formula). Archiving an already archived account does nothing. Restore
+clears is_archived; names of archived accounts stay reserved, so a restore can
+never clash. Each check and its write run in ONE database transaction, so a
+concurrent change cannot slip in between them. update() keeps its ArgumentError
+behaviour. Nothing is cascade-deleted. The source-guard test "AccountsDao offers
+no delete or archive" was removed (it existed only because 4d was not built;
+behavioural tests replace it); the "no floating point" guard stays.
+UI: in the edit sheet (edit mode only) an active account has "Archive account"
+(enabled only at a zero balance, otherwise a muted caption says to bring it to
+zero first; no confirmation, it is reversible; SnackBar "Account archived") and
+"Delete account" (shown only when the account has no transactions, otherwise a
+caption says to archive instead; it opens DeleteAccountDialog, which deletes
+itself and shows errors inside while staying open). An ARCHIVED account is
+read-only except its name (type and starting balance disabled) and offers
+"Restore account". The actions are disabled until the balance and the
+has-transactions answer have loaded. The Accounts screen shows an "Archived"
+section of muted rows below the active card when any exist; Total Balance and
+card dues are unchanged (archived accounts never counted). Future modules that
+reference accounts (loans, investments, ...) must extend hasTransactions and
+delete with their own references before they can be deleted from here.

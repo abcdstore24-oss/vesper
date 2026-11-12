@@ -12,7 +12,9 @@ import 'providers/accounts_providers.dart';
 import 'widgets/account_form_sheet.dart';
 import 'widgets/balance_summary.dart';
 
-/// All accounts with their balances. Archived accounts are hidden.
+/// The active accounts with their balances, and, only when there are any, an
+/// "Archived" section (muted rows) below them. Tapping any row opens the edit
+/// sheet; an archived account can be restored there.
 class AccountsScreen extends ConsumerWidget {
   const AccountsScreen({super.key});
 
@@ -24,6 +26,9 @@ class AccountsScreen extends ConsumerWidget {
     final accounts = ref.watch(accountsWithBalanceProvider);
     final active = accounts.valueOrNull
         ?.where((a) => !a.account.isArchived)
+        .toList();
+    final archived = accounts.valueOrNull
+        ?.where((a) => a.account.isArchived)
         .toList();
 
     return Scaffold(
@@ -62,6 +67,33 @@ class AccountsScreen extends ConsumerWidget {
                 ],
               ),
             ),
+          if (archived != null && archived.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            // AppSpacing.xs lines the header up with the cards (default 4px
+            // margin).
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              child: Text(
+                'Archived',
+                key: const ValueKey('accounts-archived-header'),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  for (var i = 0; i < archived.length; i++) ...[
+                    if (i > 0) const Divider(),
+                    _AccountRow(item: archived[i], dimmed: true),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -98,10 +130,13 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _AccountRow extends StatelessWidget {
-  _AccountRow({required this.item})
+  _AccountRow({required this.item, this.dimmed = false})
     : super(key: ValueKey('account-row-${item.account.id}'));
 
   final AccountWithBalance item;
+
+  /// Archived rows look muted.
+  final bool dimmed;
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +153,7 @@ class _AccountRow extends StatelessWidget {
       AmountTone.neutral => muted,
     };
 
-    return InkWell(
+    final row = InkWell(
       onTap: () => showAccountFormSheet(context, account: account),
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -199,5 +234,7 @@ class _AccountRow extends StatelessWidget {
         ),
       ),
     );
+    // Archived rows look muted.
+    return dimmed ? Opacity(opacity: 0.6, child: row) : row;
   }
 }
